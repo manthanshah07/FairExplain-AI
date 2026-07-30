@@ -53,9 +53,11 @@ export function ResultsPage() {
                   <DownloadIcon data-icon="inline-start" />
                   Download report
                 </Button>
-                <Button>
-                  <SendIcon data-icon="inline-start" />
-                  Send to reviewer
+                <Button asChild>
+                  <Link to={`/review/${result.applicant.applicationId}`}>
+                    <SendIcon data-icon="inline-start" />
+                    Send to reviewer
+                  </Link>
                 </Button>
               </div>
             </div>
