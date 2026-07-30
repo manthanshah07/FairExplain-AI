@@ -5,9 +5,9 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { cn } from "@/lib/utils"
 
 const NAV_LINKS = [
-  { label: "How it works", href: "/#how-it-works" },
-  { label: "Principles", href: "/#principles" },
-  { label: "Sample result", href: "/results" },
+  { label: "How it works", href: "/#how-it-works", type: "hash" as const },
+  { label: "Dashboard", href: "/dashboard", type: "route" as const },
+  { label: "Sample result", href: "/results", type: "route" as const },
 ]
 
 export function SiteHeader() {
@@ -20,13 +20,10 @@ export function SiteHeader() {
           <Brand />
         </Link>
 
-        <nav
-          aria-label="Primary"
-          className="hidden items-center gap-1 md:flex"
-        >
+        <nav aria-label="Primary" className="hidden items-center gap-1 md:flex">
           {NAV_LINKS.map((link) => {
             const active =
-              link.href === "/results" && pathname === "/results"
+              link.type === "route" && pathname.startsWith(link.href)
             return (
               <Button
                 key={link.href}
@@ -35,7 +32,11 @@ export function SiteHeader() {
                 size="sm"
                 className={cn(active && "text-primary")}
               >
-                <a href={link.href}>{link.label}</a>
+                {link.type === "route" ? (
+                  <Link to={link.href}>{link.label}</Link>
+                ) : (
+                  <a href={link.href}>{link.label}</a>
+                )}
               </Button>
             )
           })}
@@ -43,8 +44,11 @@ export function SiteHeader() {
 
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <Button asChild size="sm" className="hidden sm:inline-flex">
-            <Link to="/results">View sample result</Link>
+          <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
+            <Link to="/register">Sign up</Link>
+          </Button>
+          <Button asChild size="sm">
+            <Link to="/apply">New application</Link>
           </Button>
         </div>
       </div>
