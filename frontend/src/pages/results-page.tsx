@@ -28,15 +28,13 @@ export function ResultsPage() {
         <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-8 sm:px-6 md:py-12">
           <div className="flex flex-col gap-4">
             <Button
-              asChild
+              render={<Link to="/" />}
               variant="ghost"
               size="sm"
               className="-ml-2 w-fit text-muted-foreground"
             >
-              <Link to="/">
-                <ArrowLeftIcon data-icon="inline-start" />
-                Back to overview
-              </Link>
+              <ArrowLeftIcon data-icon="inline-start" />
+              Back to overview
             </Button>
 
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

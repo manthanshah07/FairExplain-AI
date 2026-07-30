@@ -20,11 +20,13 @@ export function CtaSection() {
             notice that accompanies every outcome.
           </p>
           <div className="mt-2">
-            <Button asChild size="lg" variant="secondary">
-              <Link to="/results">
-                View the sample result
-                <ArrowRightIcon data-icon="inline-end" />
-              </Link>
+            <Button
+              render={<Link to="/results" />}
+              size="lg"
+              variant="secondary"
+            >
+              View the sample result
+              <ArrowRightIcon data-icon="inline-end" />
             </Button>
           </div>
         </div>

@@ -30,12 +30,12 @@ export function SiteHeader() {
             return (
               <Button
                 key={link.href}
-                asChild
+                render={<a href={link.href} />}
                 variant="ghost"
                 size="sm"
                 className={cn(active && "text-primary")}
               >
-                <a href={link.href}>{link.label}</a>
+                {link.label}
               </Button>
             )
           })}
@@ -43,8 +43,8 @@ export function SiteHeader() {
 
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <Button asChild size="sm" className="hidden sm:inline-flex">
-            <Link to="/results">View sample result</Link>
+          <Button render={<Link to="/results" />} size="sm" className="hidden sm:inline-flex">
+            View sample result
           </Button>
         </div>
       </div>
