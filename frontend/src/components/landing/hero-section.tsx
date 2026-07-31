@@ -46,9 +46,12 @@ export function HeroSection() {
           </p>
 
           <div className="flex flex-col gap-3 sm:flex-row">
-            <Button render={<Link to="/results" />} size="lg">
-              See a sample assessment
+            <Button render={<Link to="/register" />} size="lg">
+              Apply Now
               <ArrowRightIcon data-icon="inline-end" />
+            </Button>
+            <Button render={<Link to="/results" />} size="lg" variant="secondary">
+              See sample assessment
             </Button>
             <Button render={<a href="#how-it-works" />} size="lg" variant="outline">
               How it works
