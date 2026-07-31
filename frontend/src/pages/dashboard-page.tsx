@@ -2,7 +2,7 @@ import { SiteHeader } from "@/components/layout/site-header"
 import { SiteFooter } from "@/components/layout/site-footer"
 import { useDashboardStats, useVolumeData, useOutcomeData, useRecentApplications } from "@/hooks/use-application"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { UsersIcon, CheckCircleIcon, AlertTriangleIcon, FlagIcon } from "lucide-react"
+import { UsersIcon, CheckCircleIcon, AlertTriangleIcon, FlagIcon, type LucideIcon } from "lucide-react"
 import {
   Table,
   TableBody,
@@ -162,7 +162,14 @@ export function DashboardPage() {
   )
 }
 
-function StatCard({ title, value, icon: Icon, trend }: any) {
+interface StatCardProps {
+  title: string
+  value: number | string | undefined
+  icon: LucideIcon
+  trend?: string
+}
+
+function StatCard({ title, value, icon: Icon, trend }: StatCardProps) {
   return (
     <Card className="flex flex-col justify-between">
       <CardHeader className="flex flex-row items-center justify-between pb-2">

@@ -1,0 +1,105 @@
+"""
+FairExplain AI — Alembic Environment Script
+=============================================
+Configures Alembic for async SQLAlchemy migrations with autogenerate support.
+
+Key design decisions:
+- Uses `run_async_migrations()` so the async engine is used consistently.
+- `target_metadata` is set to `Base.metadata` after importing all models,
+  enabling full autogenerate support for all tables.
+- Database URL is read from application settings, never hardcoded.
+"""
+
+from __future__ import annotations
+
+import asyncio
+from logging.config import fileConfig
+
+from alembic import context
+from sqlalchemy import pool
+from sqlalchemy.engine import Connection
+from sqlalchemy.ext.asyncio import async_engine_from_config
+
+from app.config.settings import get_settings
+
+# ---------------------------------------------------------------------------
+# Import all models so their tables are registered on Base.metadata
+# ---------------------------------------------------------------------------
+from app.db.base import Base
+import app.models  # noqa: F401 — side-effect import registers all models
+
+# ---------------------------------------------------------------------------
+# Alembic config object
+# ---------------------------------------------------------------------------
+config = context.config
+settings = get_settings()
+
+# Override sqlalchemy.url with the value from our settings module
+config.set_main_option("sqlalchemy.url", settings.database_url)
+
+# Interpret the config file for Python logging if present
+if config.config_file_name is not None:
+    fileConfig(config.config_file_name)
+
+# Metadata for autogenerate
+target_metadata = Base.metadata
+
+
+# ---------------------------------------------------------------------------
+# Migration runners
+# ---------------------------------------------------------------------------
+
+
+def run_migrations_offline() -> None:
+    """
+    Run migrations in 'offline' mode (emit SQL to stdout / file).
+
+    This does not require a live database connection — useful for
+    generating migration scripts for review before applying.
+    """
+    url = config.get_main_option("sqlalchemy.url")
+    context.configure(
+        url=url,
+        target_metadata=target_metadata,
+        literal_binds=True,
+        dialect_opts={"paramstyle": "named"},
+        compare_type=True,
+    )
+    with context.begin_transaction():
+        context.run_migrations()
+
+
+def do_run_migrations(connection: Connection) -> None:
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+        compare_type=True,
+    )
+    with context.begin_transaction():
+        context.run_migrations()
+
+
+async def run_async_migrations() -> None:
+    """Run migrations using an async engine (required for asyncpg)."""
+    connectable = async_engine_from_config(
+        config.get_section(config.config_ini_section, {}),
+        prefix="sqlalchemy.",
+        poolclass=pool.NullPool,
+    )
+    async with connectable.connect() as connection:
+        await connection.run_sync(do_run_migrations)
+    await connectable.dispose()
+
+
+def run_migrations_online() -> None:
+    """Run migrations in 'online' mode (apply to a live database)."""
+    asyncio.run(run_async_migrations())
+
+
+# ---------------------------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------------------------
+if context.is_offline_mode():
+    run_migrations_offline()
+else:
+    run_migrations_online()
