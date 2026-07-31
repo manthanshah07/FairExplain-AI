@@ -24,7 +24,7 @@ export function AuthPage() {
 
   const onSubmit = (data: AuthFormValues) => {
     console.log("Registration data:", data)
-    navigate("/apply")
+    navigate("/application")
   }
 
   return (

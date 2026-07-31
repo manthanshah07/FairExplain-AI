@@ -7,6 +7,7 @@ import { AuthPage } from "@/pages/auth-page"
 import { ApplyPage } from "@/pages/apply-page"
 import { DashboardPage } from "@/pages/dashboard-page"
 import { ReviewPage } from "@/pages/review-page"
+import { NotFoundPage } from "@/pages/not-found-page"
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -24,11 +25,12 @@ function App() {
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/register" element={<AuthPage />} />
-            <Route path="/apply" element={<ApplyPage />} />
+            <Route path="/application" element={<ApplyPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/review" element={<ReviewPage />} />
             <Route path="/results" element={<ResultsPage />} />
             <Route path="/results/:applicationId" element={<ResultsPage />} />
+            <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </BrowserRouter>
       </ThemeProvider>

@@ -7,6 +7,9 @@ import { cn } from "@/lib/utils"
 const NAV_LINKS = [
   { label: "How it works", href: "/#how-it-works" },
   { label: "Principles", href: "/#principles" },
+  { label: "Apply", href: "/application" },
+  { label: "Review Queue", href: "/review" },
+  { label: "Dashboard", href: "/dashboard" },
   { label: "Sample result", href: "/results" },
 ]
 
@@ -25,12 +28,12 @@ export function SiteHeader() {
           className="hidden items-center gap-1 md:flex"
         >
           {NAV_LINKS.map((link) => {
-            const active =
-              link.href === "/results" && pathname === "/results"
+            const active = link.href === pathname
+            const isHash = link.href.includes("#")
             return (
               <Button
                 key={link.href}
-                render={<a href={link.href} />}
+                render={isHash ? <a href={link.href} /> : <Link to={link.href} />}
                 variant="ghost"
                 size="sm"
                 className={cn(active && "text-primary")}
