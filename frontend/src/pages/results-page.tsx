@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom"
+import { Link, useParams } from "react-router-dom"
 import {
   ArrowLeftIcon,
   DownloadIcon,
@@ -16,10 +16,23 @@ import { ScoreBreakdown } from "@/components/results/score-breakdown"
 import { LoanAffordability } from "@/components/results/loan-affordability"
 import { ExplanationCard } from "@/components/results/explanation-card"
 import { FairnessCard } from "@/components/results/fairness-card"
-import { mockAssessment } from "@/lib/mock-data"
+import { useAssessment } from "@/hooks/use-application"
 
 export function ResultsPage() {
-  const result = mockAssessment
+  const { applicationId } = useParams()
+  const { data: result, isLoading } = useAssessment(applicationId || "sample-123")
+
+  if (isLoading || !result) {
+    return (
+      <div className="flex min-h-dvh flex-col">
+        <SiteHeader />
+        <main className="flex-1 flex items-center justify-center text-muted-foreground animate-pulse">
+          Loading assessment...
+        </main>
+        <SiteFooter />
+      </div>
+    )
+  }
 
   return (
     <div className="flex min-h-dvh flex-col">

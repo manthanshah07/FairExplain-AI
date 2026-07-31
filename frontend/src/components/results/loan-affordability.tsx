@@ -6,8 +6,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { formatINR } from "@/lib/mock-data"
-import { cn } from "@/lib/utils"
+import { cn, formatINR } from "@/lib/utils"
 import type { LoanAssessment } from "@/types/assessment"
 
 export function LoanAffordability({ loan }: { loan: LoanAssessment }) {

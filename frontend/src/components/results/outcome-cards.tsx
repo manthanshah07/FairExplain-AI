@@ -9,7 +9,7 @@ import {
 import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
 import { OutcomeBadge } from "@/components/results/outcome-badge"
-import { formatINR } from "@/lib/mock-data"
+import { formatINR } from "@/lib/utils"
 import type { LoanAssessment, ScholarshipAssessment } from "@/types/assessment"
 
 export function OutcomeCards({

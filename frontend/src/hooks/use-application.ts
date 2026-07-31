@@ -28,3 +28,24 @@ export function useReviewQueue() {
     queryFn: applicationApi.getReviewQueue,
   })
 }
+
+export function useVolumeData() {
+  return useQuery({
+    queryKey: ["volumeData"],
+    queryFn: applicationApi.getVolumeData,
+  })
+}
+
+export function useOutcomeData() {
+  return useQuery({
+    queryKey: ["outcomeData"],
+    queryFn: applicationApi.getOutcomeData,
+  })
+}
+
+export function useRecentApplications() {
+  return useQuery({
+    queryKey: ["recentApplications"],
+    queryFn: applicationApi.getRecentApplications,
+  })
+}

@@ -2,8 +2,6 @@ import type { AssessmentResult } from "@/types/assessment"
 
 const RULE_ENGINE_VERSION = "1.0.0"
 
-// Mock assessment used across Phase 1 (UI only). Numbers follow the formulas in
-// docs/RULE_ENGINE.md so the results screen is representative of real output.
 export const mockAssessment: AssessmentResult = {
   applicant: {
     name: "Priya Sharma",
@@ -100,10 +98,39 @@ export const mockAssessment: AssessmentResult = {
   },
 }
 
-export function formatINR(value: number): string {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  }).format(value)
+export const volumeData = [
+  { name: "Mon", applications: 120 },
+  { name: "Tue", applications: 145 },
+  { name: "Wed", applications: 110 },
+  { name: "Thu", applications: 180 },
+  { name: "Fri", applications: 220 },
+  { name: "Sat", applications: 90 },
+  { name: "Sun", applications: 75 },
+]
+
+export const outcomeData = [
+  { name: "Approved", value: 890, color: "hsl(var(--primary))" },
+  { name: "Needs Review", value: 210, color: "hsl(var(--warning, 38 92% 50%))" },
+  { name: "Rejected", value: 145, color: "hsl(var(--destructive))" },
+]
+
+export const RECENT_APPLICATIONS = [
+  { id: "APP-2026-004182", name: "Priya Sharma", date: "2026-07-24", score: 85.6, status: "Approved" },
+  { id: "APP-2026-004183", name: "Rahul Verma", date: "2026-07-24", score: 72.1, status: "Needs Review" },
+  { id: "APP-2026-004184", name: "Anjali Gupta", date: "2026-07-23", score: 91.2, status: "Approved" },
+  { id: "APP-2026-004185", name: "Vikram Singh", date: "2026-07-23", score: 45.0, status: "Rejected" },
+  { id: "APP-2026-004186", name: "Sneha Patel", date: "2026-07-22", score: 88.4, status: "Approved" },
+]
+
+export const DASHBOARD_STATS = {
+  totalApplications: 1245,
+  approved: 890,
+  needsReview: 210,
+  rejected: 145,
+  fairnessFlagRate: 4.2
 }
+
+export const REVIEW_QUEUE = [
+  { id: "APP-2026-004182", name: "Priya Sharma", status: "needs_review", date: "2026-07-24", score: 85.6 },
+  { id: "APP-2026-004183", name: "Rahul Verma", status: "needs_review", date: "2026-07-24", score: 72.1 },
+]

@@ -1,4 +1,11 @@
-import { mockAssessment } from "@/lib/mock-data"
+import { 
+  mockAssessment, 
+  DASHBOARD_STATS, 
+  REVIEW_QUEUE, 
+  volumeData, 
+  outcomeData, 
+  RECENT_APPLICATIONS 
+} from "@/data/mock-data"
 import type { AssessmentResult } from "@/types/assessment"
 
 // Mock delay to simulate network latency
@@ -7,7 +14,6 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 export const applicationApi = {
   getAssessment: async (_applicationId: string): Promise<AssessmentResult> => {
     await delay(800)
-    // Always return mock data for Phase 1
     return mockAssessment
   },
   
@@ -18,20 +24,26 @@ export const applicationApi = {
 
   getDashboardStats: async () => {
     await delay(600)
-    return {
-      totalApplications: 1245,
-      approved: 890,
-      needsReview: 210,
-      rejected: 145,
-      fairnessFlagRate: 4.2
-    }
+    return DASHBOARD_STATS
   },
 
   getReviewQueue: async () => {
     await delay(700)
-    return [
-      { id: "APP-2026-004182", name: "Priya Sharma", status: "needs_review", date: "2026-07-24", score: 85.6 },
-      { id: "APP-2026-004183", name: "Rahul Verma", status: "needs_review", date: "2026-07-24", score: 72.1 },
-    ]
+    return REVIEW_QUEUE
+  },
+
+  getVolumeData: async () => {
+    await delay(400)
+    return volumeData
+  },
+
+  getOutcomeData: async () => {
+    await delay(400)
+    return outcomeData
+  },
+
+  getRecentApplications: async () => {
+    await delay(500)
+    return RECENT_APPLICATIONS
   }
 }
