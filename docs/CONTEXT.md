@@ -1,48 +1,63 @@
-# Project Context
+# Domain Context & Problem Framing
 
-## 1. Background
+**Comprehensive problem statement, educational financing background, and solution architecture rationale for FairExplain AI.**
 
-Education financing in India (and similar markets) typically involves two disconnected processes: applying for scholarships, and applying for education loans. Students rarely see how the two interact — a scholarship award should reduce the loan a student actually needs, but in practice these are evaluated by different institutions on different timelines with no shared, transparent logic.
+---
 
-## 2. Problem
+## 1. Background: The Educational Financing Divide
 
-Students struggle to understand:
+In higher education financing—particularly across emerging economies such as India—prospective students navigate two entirely disconnected institutional processes:
+1. **Scholarship Applications**: Managed by universities, government departments, charitable endowments, and private trusts, typically operating on fragmented eligibility cycles.
+2. **Education Loan Applications**: Underwritten by banks and non-banking financial companies (NBFCs), focused almost exclusively on credit risk, existing household debt, and collateral.
 
-- **Why loans are rejected** — decisions from banks are often communicated with minimal reasoning.
-- **Which scholarships they qualify for** — eligibility criteria are scattered and inconsistently applied.
-- **How scholarships reduce loan burden** — no tool connects the two calculations end-to-end.
+In practice, these two systems operate as parallel silos. Students rarely understand how a potential scholarship award interacts with their loan requirements. Consequently, students often borrow significantly more than necessary—accumulating high-interest debt—or abandon educational opportunities because initial tuition fees appear insurmountable.
 
-This opacity has real consequences: students over-apply for loans they don't need, under-apply for scholarships they'd qualify for, and lose trust in both processes.
+---
 
-## 3. Why Existing Approaches Fall Short
+## 2. Core Problem Drivers
 
-Most loan-eligibility tools are single-purpose credit calculators — they take financial inputs and return a binary result with no reasoning, and they don't account for scholarship support at all. Scholarship portals, in turn, rarely connect to the loan process. Neither gives the student a unified, explainable picture.
+```
+┌──────────────────────────────────────────────┐
+│                  THE DIVIDE                  │
+├──────────────────────┬───────────────────────┤
+│ Scholarship Silo     │ Education Loan Silo   │
+├──────────────────────┼───────────────────────┤
+│ • Scattered criteria │ • Opaque rejection    │
+│ • Unknown timelines  │ • High-interest debt  │
+│ • Hidden waiver caps │ • Ignores scholarships│
+└──────────────────────┴───────────────────────┘
+```
 
-## 4. Solution
+1. **Information Asymmetry & Opaque Outcomes**: Loan denials and scholarship rejections are frequently issued as binary, uninformative decisions without actionable explanations.
+2. **Disconnected Calculations**: No unified platform exists to compute post-scholarship net tuition balances before initiating loan underwriting.
+3. **Complex Policy Constraints**: Institutional tuition-waiver caps, program-level limits, and award exclusivity rules create confusion regarding the actual out-of-pocket tuition payable.
+4. **Erosion of Trust in Automated Systems**: Black-box scoring algorithms create valid concerns regarding bias, unfair demographic proxies, and lack of accountability.
 
-FairExplain AI treats scholarship calculation as a **precursor** to loan assessment, not a separate process, and wraps both in an explainability layer.
+---
+
+## 3. FairExplain AI Solution Rationale
+
+FairExplain AI unites scholarship screening and tuition accounting as a **deterministic precursor** to education loan evaluation, enveloped in an explainability and human-governance framework:
 
 ```mermaid
 flowchart TD
-    A[Student Data] --> B[Document Verification]
-    B --> C[Scholarship Engine]
-    C --> D[Reduced Loan Amount]
-    D --> E[Loan Recommendation]
-    E --> F[Explainable AI]
-    F --> G[Human Review]
+    A[Applicant Academic & Financial Profile] --> B[Verified Evidence Snapshot]
+    B --> C[Deterministic Eligibility Filter Engine]
+    C -->|Three-State Outcome: Eligible / Ineligible / Pending| D[Deterministic Tuition Accounting Engine]
+    D -->|Confirmed Awards Applied Under Institutional Caps| E[Net Tuition Account Summary]
+    E --> F[Reduced Loan-Need Assessment]
+    F --> G[Explainable AI Layer]
+    G --> H[Fairness & Proxy-Attribute Audit]
+    H --> I[Human Financial Aid / Banking Officer Queue]
+    I --> J[Binding Human Decision & Auditable PDF Report]
 ```
 
-## 5. Guiding Principle
+---
 
-> **The AI recommends. The human decides.**
+## 4. Architectural Tenets & Responsible AI
 
-At no point does FairExplain AI issue a final, binding approval or rejection. Every output is explicitly labeled as a recommendation pending review by an authorized human at the relevant institution (university, bank, or scholarship provider). This is a hard constraint enforced at the prompt level (see [PROMPTS.md](./PROMPTS.md)) and at the UI level, not a stylistic choice.
-
-## 6. Stakeholder Value
-
-| Stakeholder | Value delivered |
-|---|---|
-| Students | A single, explainable view of scholarship + loan outcome before committing to either process. |
-| Universities | Consistent, auditable scholarship screening criteria. |
-| Banks | Pre-screened, explained applications that speed up manual underwriting. |
-| Scholarship Providers | Transparent, reproducible eligibility criteria they can defend and refine. |
+1. **Deterministic Domain Core Owns All Numbers**: All eligibility determinations, award caps, and tuition balances are computed by pure Python deterministic algorithms. Artificial intelligence models never calculate scores or alter mathematical balances.
+2. **The AI Recommends; The Human Decides**: The platform operates strictly as a decision-support assistant. No automated, binding legal or financial determination is made without authorized human review.
+3. **Evidence Integrity**: Missing supporting documentation places an assessment into `PENDING_EVIDENCE`, preventing premature or unfair rejections.
+4. **Proxy Neutrality**: The system strictly screens against demographic proxies (e.g., geographic postal codes, surnames) to prevent indirect bias from influencing explanations or recommendations.
+5. **Auditable Reproducibility**: Frozen evaluation snapshots guarantee that any historical assessment can be mathematically and logically reproduced years later.
