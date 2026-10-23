@@ -1,87 +1,85 @@
 # Software Requirements Specification (SRS)
 
 **Product:** FairExplain AI
-**Status:** Draft — v1.0
+**Document Status:** Active Engineering Specification
+**Current Phase:** Phase 1B Completed & Merged into `main`; Phase 1C Proposed
 
 ---
 
 ## 1. Introduction
 
 ### 1.1 Purpose
-Defines the functional and non-functional requirements for FairExplain AI, translating the goals in [PRD.md](./PRD.md) into implementable requirements.
+This document translates the product goals defined in [PRD.md](./PRD.md) into concrete, testable functional and non-functional engineering requirements for FairExplain AI.
 
-### 1.2 Scope
-Covers the web application (frontend + backend), the AI layer (OCR, rule engine, LLM explanation, fairness checker), and reporting/admin features described in the PRD.
+### 1.2 System Scope
+The system comprises:
+1. **Deterministic Domain Core** (`backend/app/domain/`): Implemented in pure Python 3.10+; owns eligibility evaluation and tuition accounting calculations.
+2. **Backend API & Persistence Layer** (`backend/app/`): FastAPI application framework and SQLAlchemy 2 persistence services.
+3. **Frontend Client Application** (`frontend/src/`): React + Vite + TypeScript user interface.
+4. **Explainable AI & Fairness Layer**: LLM explanation generation and proxy-attribute screening guardrails.
 
-### 1.3 Definitions
-- **Rule Engine**: deterministic scoring module producing scholarship/loan scores from structured inputs.
-- **Explanation Layer**: LLM-based module that converts a computed score into plain-English reasoning.
-- **Fairness Checker**: module that audits inputs and LLM outputs for reliance on sensitive/proxy attributes.
+---
 
 ## 2. Functional Requirements
 
-| ID | Requirement |
-|---|---|
-| FR-1 | System shall support user registration and login (demo authentication acceptable for MVP; production requires verified identity). |
-| FR-2 | System shall collect academic profile data: CGPA, 10th %, 12th %, active backlog count. |
-| FR-3 | System shall collect financial profile data: household income, existing EMI obligations, tuition fee, requested loan amount. |
-| FR-4 | System shall accept document uploads (marksheets, income proof, ID proof) in PDF/image format. |
-| FR-5 | System shall run OCR extraction on uploaded documents and cross-check extracted values against user-entered values, flagging mismatches. |
-| FR-6 | System shall compute a Scholarship Score and Scholarship Amount using the deterministic formula in [RULE_ENGINE.md](./RULE_ENGINE.md). |
-| FR-7 | System shall compute a Reduced Loan Amount (requested loan − scholarship amount) prior to loan assessment. |
-| FR-8 | System shall compute a Loan Assessment outcome (Eligible / Needs Review / Not Recommended) on the reduced loan amount. |
-| FR-9 | System shall generate an AI explanation (recommendation, reasons, confidence, fairness note) for every Scholarship and Loan Assessment. |
-| FR-10 | System shall run a Fairness Check on every generated explanation before it is shown to the user. |
-| FR-11 | System shall allow students to run a What-If Simulation without creating a formal application record. |
-| FR-12 | System shall generate a downloadable PDF report summarizing scores, recommendation, and explanation. |
-| FR-13 | System shall provide an admin dashboard showing application volume, outcome distribution, and fairness-flag rate. |
-| FR-14 | System shall log every scoring event and explanation generation event to an audit trail (see [DATA_MODEL.md](./DATA_MODEL.md)). |
-| FR-15 | System shall route any "Needs Review" outcome to a human reviewer queue and shall not present it as a final decision anywhere in the UI. |
+| Requirement ID | Specification | Status & Traceability |
+|---|---|---|
+| **FR-01** | System shall maintain user profiles categorized by role (`student`, `university`, `bank`, `scholarship_provider`, `admin`). | Scaffolded in `models/user.py` |
+| **FR-02** | System shall collect academic profile attributes: `cgpa`, `tenth_percent`, `twelfth_percent`, `active_backlogs`, and `coursework_score`. | Scaffolded in `models/academic_record.py` |
+| **FR-03** | System shall collect financial profile attributes: `household_income`, `existing_emi`, `tuition_fee`, and `requested_loan`. | Scaffolded in `models/financial_profile.py` |
+| **FR-04** | System shall support document uploads (`marksheet`, `income_proof`, `id_proof`) in PDF and image formats. | Scaffolded in `models/uploaded_document.py` |
+| **FR-05** | System shall execute OCR extraction on uploaded documents and cross-check extracted data against self-reported attributes. | Planned (Phase 3) |
+| **FR-06** | System shall deterministically evaluate scholarship eligibility using institution criteria, supporting `EQ`, `NEQ`, `GT`, `GTE`, `LT`, `LTE`, `IN`, `NOT_IN` operators and returning `ELIGIBLE`, `INELIGIBLE`, or `PENDING_EVIDENCE`. | **Implemented & Tested (Phase 1B)** (`backend/app/domain/eligibility.py`) |
+| **FR-07** | System shall strictly validate criteria attributes against `SUPPORTED_ATTRIBUTES`, rejecting unknown attributes and requiring explicit `charter_authorization` for sensitive attributes. | **Implemented & Tested (Phase 1B)** (`backend/app/domain/models.py`) |
+| **FR-08** | System shall allocate confirmed scholarship awards against gross eligible tuition in strict ascending priority order, applying institutional and program caps and tracking surplus. | **Implemented & Tested (Phase 1B)** (`backend/app/domain/accounting.py`) |
+| **FR-09** | System shall enforce that only awards with lifecycle status `CONFIRMED` reduce tuition payable; provisional, pending, or unconfirmed awards shall not reduce payable tuition. | **Implemented & Tested (Phase 1B)** (`backend/app/domain/accounting.py`) |
+| **FR-10** | System shall reject confirmed awards with missing or tied priority ranks and reject mutually exclusive incompatible awards with explicit domain exceptions. | **Implemented & Tested (Phase 1B)** (`backend/app/domain/accounting.py`) |
+| **FR-11** | System shall perform loan affordability assessment on the post-scholarship reduced loan principal. | Planned (Phase 2) |
+| **FR-12** | System shall generate a structured plain-English explanation for every completed assessment using a constrained LLM prompt contract. | Planned (Phase 4) (Contract in `PROMPTS.md`) |
+| **FR-13** | System shall screen all generated explanations for sensitive demographic proxies and route flagged cases to human review. | Planned (Phase 5) |
+| **FR-14** | System shall provide a client-side What-If Simulator allowing prospective applicants to model scenarios without persisting formal applications. | Prototype Scaffolded in UI |
+| **FR-15** | System shall compile a downloadable PDF summary report embedding calculations, explanation text, policy versions, and human-review disclaimers. | Planned (Phase 6) |
+| **FR-16** | System shall record every domain evaluation, explanation generation pass, fairness flag, and human review action in an immutable audit log. | Scaffolded in `models/audit_log.py` |
+
+---
 
 ## 3. Non-Functional Requirements
 
-| ID | Requirement |
-|---|---|
-| NFR-1 | UI shall be responsive across desktop, tablet, and mobile viewports. |
-| NFR-2 | Average API response time shall be under 3 seconds. |
-| NFR-3 | Every AI-generated recommendation shall include a human-readable explanation — no unexplained numeric-only output. |
-| NFR-4 | All scoring, document, and explanation events shall be recorded in an audit log with timestamp and rule-engine version. |
-| NFR-5 | UI shall meet basic accessibility standards (keyboard navigation, sufficient color contrast, alt text on icons). |
-| NFR-6 | Rule engine outputs shall be 100% reproducible: identical inputs and rule-engine version shall always yield identical scores. |
-| NFR-7 | Uploaded documents and financial data shall be stored encrypted at rest. |
-
-## 4. Data Dictionary — Inputs
-
-| Field | Type | Notes |
+| ID | Requirement | Metric / Verification Method |
 |---|---|---|
-| CGPA | Decimal (0–10) | Current cumulative GPA |
-| 10th % | Decimal (0–100) | Secondary school percentage |
-| 12th % | Decimal (0–100) | Higher secondary percentage |
-| Backlogs | Integer | Count of active/unresolved backlogs |
-| Household Income | Currency (INR/year) | Self-reported, cross-checked via OCR |
-| Existing EMI | Currency (INR/month) | Sum of current loan obligations |
-| Tuition Fee | Currency (INR/year) | Annual program fee |
-| Requested Loan | Currency (INR) | Amount requested before scholarship reduction |
-| Documents | File(s) | Marksheets, income proof, ID proof |
+| **NFR-01** | **Deterministic Reproducibility** | Identical inputs, policy versions, and engine versions must yield identical outputs with 100% mathematical consistency across runs. |
+| **NFR-02** | **Zero External Dependencies in Domain Core** | `backend/app/domain/` must have zero third-party dependencies, running purely on Python 3.10+ standard library. |
+| **NFR-03** | **Finite Monetary Arithmetic** | Monetary calculations must use `Decimal` with finite-value validation and `ROUND_HALF_UP` quantization to two decimal places (`0.01`). Floats and booleans are prohibited. |
+| **NFR-04** | **Human Authority Governance** | System outputs are strictly labeled as decision-support recommendations. Human reviewers retain sole legal and operational decision authority. |
+| **NFR-05** | **Response Time Latency** | Domain calculations must execute in $< 50\text{ ms}$; end-to-end API response time (including AI explanation) must be $< 3.0\text{ seconds}$. |
+| **NFR-06** | **Responsive & Accessible UI** | Frontend must be fully responsive across mobile (390px), tablet, and desktop (1280px+), adhering to WCAG 2.1 AA contrast standards. |
+| **NFR-07** | **Data Protection at Rest** | Financial profile data and uploaded identity documents must be encrypted at rest in the database and cloud storage. |
 
-## 5. Data Dictionary — Outputs
+---
 
-| Field | Type | Notes |
+## 4. Input & Output Data Dictionaries
+
+### 4.1 Domain Inputs (`backend/app/domain/models.py`)
+| Field Name | Type | Constraints / Registry |
 |---|---|---|
-| Scholarship % | Decimal | Percentage of tuition fee covered |
-| Scholarship Amount | Currency (INR) | Scholarship % × tuition fee |
-| Remaining Loan | Currency (INR) | Requested loan − scholarship amount |
-| Recommendation | Enum | Eligible / Needs Review / Not Recommended |
-| Confidence | Decimal (0–100%) | Rule-engine score confidence band |
-| Explanation | Text | Plain-English reasoning (LLM-generated) |
-| Fairness Note | Text | Result of fairness check on this output |
+| `cgpa` | Decimal | 0.00 – 10.00 (`MERIT_RANKING`, `PROGRAM_ELIGIBILITY`) |
+| `tenth_percent` | Decimal | 0.00 – 100.00 (`MERIT_RANKING`, `PROGRAM_ELIGIBILITY`) |
+| `twelfth_percent` | Decimal | 0.00 – 100.00 (`MERIT_RANKING`, `PROGRAM_ELIGIBILITY`) |
+| `active_backlogs` | Integer | $\ge 0$ count (`MERIT_RANKING`, `PROGRAM_ELIGIBILITY`) |
+| `household_income` | Decimal | $\ge 0.00$ INR/year (`PROGRAM_ELIGIBILITY`) |
+| `tuition_fee` | Decimal | $> 0.00$ INR/year (`PROGRAM_ELIGIBILITY`) |
+| `caste_category` | String | Sensitive attribute; requires non-empty `charter_authorization` |
+| `gender` | String | Sensitive attribute; requires non-empty `charter_authorization` |
+| `disability_status`| String / Bool | Sensitive attribute; requires non-empty `charter_authorization` |
 
-## 6. External Interface Requirements
-
-- REST API (FastAPI) consumed by the React frontend over HTTPS.
-- LLM provider API (Gemini/OpenAI) called server-side only — no client-side API keys.
-- OCR service invoked server-side on document upload.
-
-## 7. Traceability
-
-Every functional requirement above maps to a PRD feature (§4 of [PRD.md](./PRD.md)); FR-6–FR-10 map to the Rule Engine and Explanation Layer detailed in [RULE_ENGINE.md](./RULE_ENGINE.md) and [PROMPTS.md](./PROMPTS.md) respectively.
+### 4.2 Accounting Outputs (`backend/app/domain/models.py`)
+| Field Name | Type | Description |
+|---|---|---|
+| `gross_eligible_tuition` | Decimal | Base tuition fee subject to scholarship allocation (`0.01` precision). |
+| `institutional_cap_applied` | Decimal | Effective waiver limit under institutional policies. |
+| `total_effective_reduction` | Decimal | Sum of actual fee reductions achieved by confirmed awards. |
+| `remaining_payable_tuition` | Decimal | Net tuition balance payable by the student. |
+| `remaining_waiver_allowance` | Decimal | Unused waiver allowance remaining under institutional caps. |
+| `total_unapplied_surplus` | Decimal | Award value that exceeded tuition or caps (not cash or refund). |
+| `confirmed_allocations` | List | Detailed per-award breakdown (nominal, capped, reduction, surplus, cap reason). |
+| `unconfirmed_awards` | List | Non-confirmed awards that did not reduce payable tuition. |

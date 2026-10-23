@@ -1,300 +1,134 @@
 # PROJECTCONTEXT.md
 
-> **Purpose:** This document provides AI coding agents (Codex, Claude Code, Cursor, Gemini CLI, Cline, Windsurf, etc.) with the architectural context, constraints, and development conventions required to contribute consistently to the FairExplain AI project.
+> **Purpose:** This document provides AI coding agents (Claude Code, Cursor, Codex, Gemini CLI, etc.) and software engineers with the authoritative architectural context, non-negotiable constraints, verified current status, and development conventions required to contribute consistently to FairExplain AI.
 
 ---
 
-# Project Identity
+## 1. Project Identity & Status
 
-**Project Name:** FairExplain AI
-
-**Project Type:** Enterprise-grade full-stack web application
-
-**Current Status:** MVP Development
-
-**Purpose:**
-Build an Explainable AI platform that evaluates scholarship eligibility, reduces the required education loan, and generates transparent AI explanations while ensuring every final decision remains with a human reviewer.
-
----
-
-# Core Principles
-
-The following principles are **non-negotiable**:
-
-- The Rule Engine is the single source of truth.
-- The LLM never calculates scores.
-- The LLM never changes decisions.
-- AI provides recommendations only.
-- Humans make final decisions.
-
-> **The AI recommends. Humans decide.**
+- **Project Name:** FairExplain AI
+- **Repository Path:** `/Users/manthanshah/Documents/FairExplainAI/FairExplain-AI`
+- **Current Verified Status:**
+  - **Phase 1B (Deterministic Domain Core): COMPLETED and MERGED into `main`** (Commit `72d0a03`, PR #5).
+  - **Phase 1C (Persistence Layer): PROPOSED and AWAITING EXPLICIT IMPLEMENTATION APPROVAL** (Audited as `READY WITH BLOCKERS`).
+  - **Backend Scaffold & Frontend Prototype:** Present, partially scaffolded; business endpoints and live database persistence are not yet active.
+- **Mission:** Build an explainable, deterministic education financing platform that evaluates scholarship eligibility, calculates post-scholarship tuition balances, and prepares structured explanations while maintaining strict human-in-the-loop decision governance.
 
 ---
 
-# What This Project Is
+## 2. Verified Implementation Status
 
-- A deterministic rule-engine application.
-- An explainable AI system.
-- A modern full-stack web application.
-- A portfolio-quality enterprise project.
+Do not guess whether a component or route exists. The repository state has been audited as follows:
 
-## What This Project Is NOT
-
-- A chatbot.
-- An autonomous loan approval system.
-- An AI-first decision engine.
-- An application where the LLM performs business logic.
-
----
-
-# Technology Stack
-
-## Frontend
-
-- React
-- TypeScript
-- Vite
-- Tailwind CSS
-- shadcn/ui
-- React Hook Form
-- TanStack Query
-- Recharts
-
-## Backend
-
-- FastAPI
-- Python
-- SQLAlchemy
-- PostgreSQL
-
-## Database
-
-- Neon PostgreSQL
-
-## Deployment
-
-- Frontend → Vercel
-- Backend → Railway
-
-## AI Components
-
-- OCR
-- Rule Engine
-- Gemini/OpenAI
-- Fairness Checker
+| Layer / Component | Verified Implementation State | Notes |
+|---|---|---|
+| **Deterministic Domain Core** | **Implemented & Tested** (`backend/app/domain/`) | Pure Python 3.10+, zero external dependencies. **40/40 unit tests pass** (`tests/unit/`). |
+| **Domain Tests** | **Executable & Passing** | Runs via `PYTHONPATH=. python3 -m unittest discover -s tests/unit`. No third-party packages required. |
+| **Backend Scaffold** | **Scaffolded** (`backend/app/main.py`) | FastAPI app with logging, middleware, CORS, lifespan, and `/health`. |
+| **API Routers** | **Scaffolded / Inactive** (`backend/app/api/router.py`) | Feature routers (`/auth`, `/application`, `/scholarship`, `/loan`) are commented out pending integration. |
+| **Database Models** | **Scaffolded** (`backend/app/models/`) | Initial SQLAlchemy 2 ORM models exist (User, Application, AcademicRecord, FinancialProfile, UploadedDocument, ScholarshipAssessment, LoanAssessment, ExplanationReport, AuditLogEntry). |
+| **Database Migrations** | **Not Initialized** (`backend/alembic/versions/`) | Alembic configuration exists, but `versions/` contains only `.gitkeep`. No migration revisions have been generated or applied. |
+| **Persistence Repositories** | **Scaffolded / Inactive** (`backend/app/repositories/`) | Generic base repository scaffold exists; domain-specific repositories are not yet implemented. |
+| **Frontend Client** | **Prototype / Mock-backed** (`frontend/src/`) | React + Vite client with full UI flows running against mock data (`mock-data.ts`). |
+| **OCR Service** | **Not Implemented** | Document processing pipeline is planned for future phases. |
+| **LLM Explanation Service** | **Prompt Contract Specified** | Specifications exist in `docs/PROMPTS.md`; backend service integration is planned for future phases. |
+| **Fairness Checker** | **Designed** | Proxy screening rules defined; runtime checker is planned for future phases. |
 
 ---
 
-# High-Level Architecture
+## 3. Approved Domain Contracts (Phase 1B Invariants)
 
-Frontend
+The Phase 1B domain core implements strict contracts in `backend/app/domain/`. Any future changes or persistence layers must conform to these invariants:
 
-↓
+### 3.1 Eligibility Filtering vs. Ranking
+- **Filtering is Not Ranking**: Phase 1B implements deterministic eligibility filtering against explicit program criteria. Merit ranking, percentile scoring, and competitive cohort comparisons are distinct downstream processes and are **not** part of Phase 1B.
+- **Three-State Outcomes**:
+  - `ELIGIBLE`: All mandatory criteria satisfied; all required evidence verified.
+  - `INELIGIBLE`: One or more mandatory criteria failed.
+  - `PENDING_EVIDENCE`: No mandatory criteria failed, but one or more criteria require evidence that is missing or unverified.
+- **Evidence Integrity**: Missing or unverified evidence must **never** be silently treated as a failed criterion.
+- **Attribute Registry & Safety**:
+  - Supported attributes are strictly registered in `SUPPORTED_ATTRIBUTES` and categorized as `MERIT_RANKING`, `PROGRAM_ELIGIBILITY`, or `RESTRICTED_SENSITIVE`.
+  - Unknown or misspelled attributes fail closed (`UnsupportedAttributeError`).
+  - Sensitive attributes (`caste_category`, `caste`, `gender`, `religion`, `disability_status`) require an explicit, non-empty `charter_authorization` string at the criterion or policy level (`DisallowedAttributeError`).
+  - *Charter authorization is a technical prerequisite enforcing institutional governance, not a legal clearance declaration.*
 
-REST API
-
-↓
-
-Business Services
-
-↓
-
-Rule Engine
-
-↓
-
-Database
-
-↓
-
-LLM Explanation Layer
-
-↓
-
-PDF Report Generation
-
----
-
-# Documentation Priority
-
-Always consult these files before implementing new functionality.
-
-1. RULE_ENGINE.md
-2. DATA_MODEL.md
-3. ARCHITECTURE.md
-4. SRS.md
-5. PRD.md
-6. PROMPTS.md
-7. ROADMAP.md
-8. README.md
-9. CONTEXT.md
-
-If two documents conflict, prefer the most specific one.
+### 3.2 Tuition Accounting & Award Allocation
+- **Eligibility is Not an Award**: Eligibility does not guarantee funding.
+- **Confirmed Awards Only**: Only awards with lifecycle status `CONFIRMED` reduce actual tuition payable. Provisional, pending, eligible, applied, or rejected awards must **never** reduce payable tuition.
+- **Strict Priority Enforcement**: Confirmed awards must specify a unique, positive integer priority rank (`priority >= 1`). Missing or tied priorities raise `MissingAwardPriorityError` or `TiedAwardPriorityError`. Arbitrary fallback ordering is prohibited.
+- **Incompatible Awards**: Mutually exclusive confirmed awards raise `IncompatibleAwardsError`.
+- **Independent Balance Tracking**:
+  - `gross_eligible_tuition`: Starting tuition amount.
+  - `institutional_cap_applied`: Effective waiver limit under institutional policies.
+  - `total_effective_reduction`: Sum of actual reductions applied by confirmed awards.
+  - `remaining_payable_tuition`: Net amount payable by the student.
+  - `remaining_waiver_allowance`: Remaining room under the institutional waiver cap.
+  - `total_unapplied_surplus`: Amount by which awards exceed tuition or caps.
+- **Surplus Semantics**: Unapplied surplus is **not** cash, not a living-expense stipend, and not a refund to the student.
+- **Monetary Precision**: All currency math uses `Decimal`, explicit finite-value validation (`validate_finite_decimal`), and `ROUND_HALF_UP` quantization to two decimal places (`0.01`).
 
 ---
 
-# Development Philosophy
+## 4. Phase 1C Persistence Audit & Proposed Scope
 
-Always prefer:
+Phase 1C was audited and assessed as **`READY WITH BLOCKERS`**. It is currently **proposed and awaiting explicit implementation approval**.
 
-- Readability over cleverness
-- Maintainability over shortcuts
-- Explicit code over hidden magic
-- Reusable components over duplication
-- Composition over inheritance
-- Strong typing over weak typing
+### 4.1 Identified Blockers
+1. **Dependency & Environment Setup**: The local development environment requires a dedicated Python virtual environment to run database tests and migrations cleanly.
+2. **Empty Migration History**: Alembic has no initial baseline revision. A safe initial migration must be established against a disposable PostgreSQL instance.
+3. **Model & Domain Contract Gaps**: The existing scaffold models (`backend/app/models/`) do not yet represent:
+   - Versioned scholarship policy catalogs and individual criteria definitions.
+   - Award lifecycle specifications and multi-award priority allocations.
+   - Criterion-level evaluation breakdown snapshots (`CriterionEvaluation`).
+   - Detailed tuition accounting balance records (`TuitionAccountSummary`).
+   - Frozen input snapshots required for historical reproducibility.
 
----
+### 4.2 Proposed Phase 1C Sub-Milestones
+- **Phase 1C.1 — Persistence Foundation**:
+  - Establish isolated Python environment and migration tooling.
+  - Align SQLAlchemy models with approved domain contracts.
+  - Generate and verify the initial Alembic migration against a disposable test database.
+  - Preserve all 40 Phase 1B domain unit tests.
+- **Phase 1C.2 — Domain Persistence & Repositories**:
+  - Implement bidirectional adapters between domain dataclasses and ORM models.
+  - Implement repository boundaries for policy retrieval and assessment persistence.
+  - Persist frozen evaluation snapshots and detailed tuition account balances.
+  - Verify PostgreSQL persistence round-trips.
 
-# Backend Rules
-
-Always:
-
-- Keep business logic inside services.
-- Keep routers thin.
-- Validate every request.
-- Use Pydantic schemas.
-- Use SQLAlchemy models.
-- Keep calculations outside API routes.
-
-Never:
-
-- Put business logic inside routers.
-- Query the database directly from UI code.
-- Duplicate rule calculations.
+*API exposure, JWT authentication, RBAC, frontend integration, and OCR pipelines remain strictly outside Phase 1C.*
 
 ---
 
-# Frontend Rules
+## 5. Non-Negotiable Core Principles
 
-Always:
-
-- Build reusable components.
-- Separate pages, components, hooks, services, and utilities.
-- Keep API logic inside service layers.
-- Use strict TypeScript.
-
-Never:
-
-- Hardcode API responses.
-- Duplicate forms.
-- Place API calls inside reusable UI components.
+1. **Deterministic Logic Owns Calculations**: Python domain logic owns all eligibility rules and tuition accounting. The AI model **never** calculates scores, changes decisions, or overrides calculations.
+2. **The AI Recommends; Humans Decide**: All system determinations are non-binding recommendations. Authorized human reviewers (university/bank officers) retain final decision authority.
+3. **Evidence Distinction**: OCR extraction is not verification. Unverified evidence is pending, not failed.
+4. **Reproducibility**: Historical assessments must eventually be reproducible from frozen input snapshots, policy versions/checksums, and engine versions.
+5. **Zero External Dependencies in Domain Core**: `backend/app/domain/` must remain pure Python. Never import FastAPI, SQLAlchemy, Pydantic, or external libraries into the domain package.
 
 ---
 
-# AI Rules
+## 6. Codebase Conventions & Guidelines
 
-The AI agent MUST NEVER:
+### Backend Conventions
+- **Domain Layer (`backend/app/domain/`)**: Pure Python 3.10+, dataclasses, enums, Decimal arithmetic, custom domain exceptions.
+- **Persistence Layer (`backend/app/models/`)**: SQLAlchemy 2 declarative models using `Mapped[...]` and `mapped_column(...)`.
+- **API Layer (`backend/app/routers/`)**: Thin routers validating requests with Pydantic schemas, delegating to business services, and returning structured envelopes.
+- **Testing**:
+  - Domain tests must remain executable via standard library `unittest` (`PYTHONPATH=. python3 -m unittest discover -s tests/unit`).
+  - Integration tests use `pytest` and test databases. Never run tests against production databases.
 
-- Calculate scholarship scores.
-- Calculate loan eligibility.
-- Modify Rule Engine outputs.
-- Invent confidence values.
-- Infer missing financial data.
-
-The AI agent MAY:
-
-- Explain results.
-- Generate UI copy.
-- Produce reports.
-- Summarize recommendations.
+### Frontend Conventions
+- **Component Architecture**: Reusable UI components in `src/components/`, pages in `src/pages/`, client API hooks in `src/hooks/`.
+- **Styling**: Tailwind CSS + shadcn/ui. Accessible, high-contrast, modern interface.
+- **API Layer**: Centralized API client modules in `src/services/` with strict TypeScript types (`src/types/`).
 
 ---
 
-# Security Rules
+## 7. Change Boundary Rules
 
-Always:
-
-- Store secrets in environment variables.
-- Validate user input.
-- Encrypt sensitive data.
-- Keep AI provider keys server-side.
-
-Never:
-
-- Commit secrets.
-- Expose API keys.
-- Call LLM providers directly from the frontend.
-
----
-
-# Code Quality Standards
-
-Every contribution should be:
-
-- Typed
-- Modular
-- Testable
-- Reusable
-- Readable
-- Production-ready
-
-Prefer smaller files and reusable abstractions.
-
----
-
-# UI Guidelines
-
-Style:
-
-- Modern
-- Minimal
-- Professional
-- Accessible
-
-Use:
-
-- Tailwind CSS
-- shadcn/ui
-- Lucide Icons
-
-Keep animations subtle.
-
----
-
-# Error Handling
-
-Every API response should include:
-
-- success
-- data
-- message
-- errors
-
-Never expose internal stack traces.
-
----
-
-# Performance Goals
-
-- API response time under 3 seconds
-- Lazy loading where appropriate
-- Pagination for large datasets
-- Optimistic updates when beneficial
-
----
-
-# Before Implementing Any Feature
-
-1. Read the relevant documentation.
-2. Search the existing codebase.
-3. Reuse existing components.
-4. Reuse existing services.
-5. Avoid architectural rewrites.
-6. Keep changes focused.
-7. Follow existing naming conventions.
-
----
-
-# AI Agent Checklist
-
-Before completing any task, verify:
-
-- Project builds successfully.
-- No TypeScript errors.
-- No lint errors.
-- No architecture violations.
-- No duplicated logic.
-- Rule Engine remains the source of truth.
-- No secrets are exposed.
-- Documentation stays consistent with the implementation.
+When working on documentation:
+- **Allowed**: Editing Markdown files in `docs/` and root `README.md`, updating diagrams, fixing broken documentation links, correcting commands.
+- **Forbidden**: Modifying application source code (`.py`, `.ts`, `.tsx`), SQL migrations, lockfiles, `.env` files, or dependency manifests without explicit task authorization.
