@@ -65,6 +65,14 @@ from app.domain.loan import (
     LoanAffordabilityResult,
     assess_loan_affordability,
 )
+from app.domain.fairness import (
+    FLAGGED_POSTAL_PROXIES,
+    PROHIBITED_DEMOGRAPHIC_TERMS,
+    FairnessAuditReport,
+    FairnessViolation,
+    compute_disparate_impact_ratio,
+    screen_text_for_proxies,
+)
 
 __all__ = [
     # Enums
@@ -114,4 +122,11 @@ __all__ = [
     "evaluate_scholarship_eligibility",
     "calculate_tuition_accounting",
     "assess_loan_affordability",
+    # Fairness Engine
+    "FairnessViolation",
+    "FairnessAuditReport",
+    "screen_text_for_proxies",
+    "compute_disparate_impact_ratio",
+    "PROHIBITED_DEMOGRAPHIC_TERMS",
+    "FLAGGED_POSTAL_PROXIES",
 ]
