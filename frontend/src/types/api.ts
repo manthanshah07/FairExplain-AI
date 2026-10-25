@@ -30,6 +30,15 @@ export interface ReviewQueueItem {
   status: string
   date: string
   score: number
+  flags?: string[]
+  priority?: "high" | "medium" | "low"
+}
+
+export interface ReviewDecisionPayload {
+  decision: "approve" | "override" | "reject" | "request_evidence"
+  rationale: string
+  reviewerId?: string
+  overrideDetails?: Record<string, unknown>
 }
 
 export interface RecentApplication {
