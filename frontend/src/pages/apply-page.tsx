@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { api } from "@/services/api"
 
 const applySchema = z.object({
   cgpa: z.coerce.number().min(0).max(10, "CGPA must be between 0 and 10"),
@@ -28,6 +29,10 @@ export function ApplyPage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("academic")
   const { mutateAsync: submitApp, isPending } = useSubmitApplication()
+  const [marksheetFile, setMarksheetFile] = useState<File | null>(null)
+  const [incomeFile, setIncomeFile] = useState<File | null>(null)
+  const [idFile, setIdFile] = useState<File | null>(null)
+  const [isUploadingDocs, setIsUploadingDocs] = useState(false)
 
   const { register, handleSubmit, formState: { errors } } = useForm<ApplyFormValues>({
     resolver: zodResolver(applySchema),
@@ -36,6 +41,25 @@ export function ApplyPage() {
   const onSubmit = async (data: ApplyFormValues) => {
     try {
       const result = await submitApp(data)
+      if (result.applicationId) {
+        setIsUploadingDocs(true)
+        try {
+          if (marksheetFile) {
+            await api.uploadDocument(result.applicationId, "marksheet", marksheetFile)
+          }
+          if (incomeFile) {
+            await api.uploadDocument(result.applicationId, "income_proof", incomeFile)
+          }
+          if (idFile) {
+            await api.uploadDocument(result.applicationId, "id_proof", idFile)
+          }
+          if (marksheetFile || incomeFile || idFile) {
+            await api.verifyDocuments(result.applicationId)
+          }
+        } finally {
+          setIsUploadingDocs(false)
+        }
+      }
       navigate(`/results/${result.applicationId}`)
     } catch (error) {
       console.error("Submission failed", error)
@@ -122,20 +146,43 @@ export function ApplyPage() {
               <div className="space-y-6">
                 <div className="space-y-2">
                   <Label htmlFor="marksheet">Marksheets (PDF/Image)</Label>
-                  <Input id="marksheet" type="file" multiple />
+                  <Input
+                    id="marksheet"
+                    type="file"
+                    onChange={(e) => setMarksheetFile(e.target.files?.[0] || null)}
+                  />
+                  {marksheetFile && (
+                    <p className="text-xs text-muted-foreground">Selected: {marksheetFile.name}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="income-proof">Income Proof (PDF/Image)</Label>
-                  <Input id="income-proof" type="file" />
+                  <Input
+                    id="income-proof"
+                    type="file"
+                    onChange={(e) => setIncomeFile(e.target.files?.[0] || null)}
+                  />
+                  {incomeFile && (
+                    <p className="text-xs text-muted-foreground">Selected: {incomeFile.name}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="id-proof">ID Proof (PDF/Image)</Label>
-                  <Input id="id-proof" type="file" />
+                  <Input
+                    id="id-proof"
+                    type="file"
+                    onChange={(e) => setIdFile(e.target.files?.[0] || null)}
+                  />
+                  {idFile && (
+                    <p className="text-xs text-muted-foreground">Selected: {idFile.name}</p>
+                  )}
                 </div>
               </div>
               <div className="mt-8 flex justify-between">
                 <Button type="button" variant="outline" onClick={() => setActiveTab("financial")}>Back</Button>
-                <Button type="submit" disabled={isPending}>{isPending ? "Submitting..." : "Submit Application"}</Button>
+                <Button type="submit" disabled={isPending || isUploadingDocs}>
+                  {isPending || isUploadingDocs ? "Processing & Verifying..." : "Submit Application"}
+                </Button>
               </div>
             </TabsContent>
           </Tabs>
