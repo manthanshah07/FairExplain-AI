@@ -19,6 +19,13 @@ from app.schemas.scholarship import (
     ScholarshipEvaluateResponseData,
 )
 from app.schemas.loan import LoanAssessRequest, LoanAssessResponseData
+from app.schemas.admin import (
+    ReviewQueueItem,
+    ReviewQueueResponse,
+    ReviewDecisionRequest,
+    ReviewDecisionResponse,
+    AdminAnalyticsResponse,
+)
 
 __all__ = [
     "BaseResponse",
@@ -36,4 +43,9 @@ __all__ = [
     "ScholarshipEvaluateResponseData",
     "LoanAssessRequest",
     "LoanAssessResponseData",
+    "ReviewQueueItem",
+    "ReviewQueueResponse",
+    "ReviewDecisionRequest",
+    "ReviewDecisionResponse",
+    "AdminAnalyticsResponse",
 ]
