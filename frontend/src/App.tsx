@@ -5,6 +5,7 @@ import { AuthProvider } from "@/lib/auth"
 import { RoleGuard } from "@/components/layout/role-guard"
 import { StudentShell } from "@/components/layout/student-shell"
 import { ReviewerShell } from "@/components/layout/reviewer-shell"
+import { AdminShell } from "@/components/layout/admin-shell"
 import { LandingPage } from "@/pages/landing-page"
 import { ResultsPage } from "@/pages/results-page"
 import { AuthPage } from "@/pages/auth-page"
@@ -15,6 +16,10 @@ import { DocumentsPage } from "@/pages/student/documents-page"
 import { ReviewQueuePage } from "@/pages/reviewer/review-queue-page"
 import { CaseDetailPage } from "@/pages/reviewer/case-detail-page"
 import { ReviewHistoryPage } from "@/pages/reviewer/review-history-page"
+import { AdminAnalyticsPage } from "@/pages/admin/admin-analytics-page"
+import { PolicyViewerPage } from "@/pages/admin/policy-viewer-page"
+import { FairnessPage } from "@/pages/admin/fairness-page"
+import { AuditPage } from "@/pages/admin/audit-page"
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -116,6 +121,48 @@ function App() {
                     <ReviewerShell>
                       <ReviewHistoryPage />
                     </ReviewerShell>
+                  </RoleGuard>
+                }
+              />
+
+              {/* Admin Portal */}
+              <Route
+                path="/admin"
+                element={
+                  <RoleGuard allowedRoles={["admin"]}>
+                    <AdminShell>
+                      <AdminAnalyticsPage />
+                    </AdminShell>
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="/admin/policies"
+                element={
+                  <RoleGuard allowedRoles={["admin"]}>
+                    <AdminShell>
+                      <PolicyViewerPage />
+                    </AdminShell>
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="/admin/fairness"
+                element={
+                  <RoleGuard allowedRoles={["admin"]}>
+                    <AdminShell>
+                      <FairnessPage />
+                    </AdminShell>
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="/admin/audit"
+                element={
+                  <RoleGuard allowedRoles={["admin"]}>
+                    <AdminShell>
+                      <AuditPage />
+                    </AdminShell>
                   </RoleGuard>
                 }
               />
