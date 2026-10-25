@@ -22,8 +22,18 @@ router = APIRouter(tags=["Reporting"])
 
 
 @router.get(
-    "/{application_id}/download",
+    "/{application_id}/pdf",
     summary="Download tamper-evident assessment report as cryptographic PDF",
+    responses={
+        200: {
+            "content": {"application/pdf": {}},
+            "description": "Downloadable PDF assessment report.",
+        }
+    },
+)
+@router.get(
+    "/{application_id}/download",
+    summary="Download tamper-evident assessment report as cryptographic PDF (alias)",
     responses={
         200: {
             "content": {"application/pdf": {}},
@@ -93,5 +103,6 @@ async def download_report(
         headers={
             "Content-Disposition": f'attachment; filename="assessment_{application_id}.pdf"',
             "X-Audit-Digest": audit_hash,
+            "X-Audit-SHA256": audit_hash,
         },
     )

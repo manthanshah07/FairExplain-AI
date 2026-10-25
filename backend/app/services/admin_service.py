@@ -266,12 +266,10 @@ class AdminService:
         loan_data = None
         if loan_assessment:
             loan_data = {
-                "post_scholarship_loan_amount": float(loan_assessment.post_scholarship_loan_amount),
-                "available_monthly_capacity": float(loan_assessment.available_monthly_capacity),
-                "estimated_emi": float(loan_assessment.estimated_emi),
-                "dti_ratio_percent": float(loan_assessment.dti_ratio_percent),
+                "reduced_loan_amount": float(loan_assessment.reduced_loan_amount),
                 "outcome": loan_assessment.outcome.value if hasattr(loan_assessment.outcome, "value") else str(loan_assessment.outcome),
-                "rationale": loan_assessment.rationale,
+                "confidence": float(loan_assessment.confidence),
+                "rule_engine_version": loan_assessment.rule_engine_version,
             }
 
         # Audit logs

@@ -27,8 +27,10 @@ from app.config.settings import get_settings
 from app.core.exceptions import register_exception_handlers
 from app.core.logging import configure_logging, get_logger
 from app.middleware.logging import RequestLoggingMiddleware
+from app.middleware.rate_limit import limiter, rate_limit_exceeded_handler
 from app.api.router import api_router
 from app.routers.health import router as health_router
+from slowapi.errors import RateLimitExceeded
 
 # ---------------------------------------------------------------------------
 # Bootstrap logging before anything else so startup logs are captured.
@@ -120,6 +122,8 @@ def create_app() -> FastAPI:
     # ------------------------------------------------------------------ #
     # Exception handlers                                                   #
     # ------------------------------------------------------------------ #
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
     register_exception_handlers(app)
 
     # ------------------------------------------------------------------ #
