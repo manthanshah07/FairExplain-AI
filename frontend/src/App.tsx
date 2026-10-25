@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { ThemeProvider } from "@/lib/theme"
+import { AuthProvider } from "@/lib/auth"
 import { LandingPage } from "@/pages/landing-page"
 import { ResultsPage } from "@/pages/results-page"
 import { AuthPage } from "@/pages/auth-page"
@@ -21,18 +22,21 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/register" element={<AuthPage />} />
-            <Route path="/application" element={<ApplyPage />} />
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/review" element={<ReviewPage />} />
-            <Route path="/results" element={<ResultsPage />} />
-            <Route path="/results/:applicationId" element={<ResultsPage />} />
-            <Route path="*" element={<NotFoundPage />} />
-          </Routes>
-        </BrowserRouter>
+        <AuthProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/login" element={<AuthPage />} />
+              <Route path="/register" element={<AuthPage />} />
+              <Route path="/application" element={<ApplyPage />} />
+              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/review" element={<ReviewPage />} />
+              <Route path="/results" element={<ResultsPage />} />
+              <Route path="/results/:applicationId" element={<ResultsPage />} />
+              <Route path="*" element={<NotFoundPage />} />
+            </Routes>
+          </BrowserRouter>
+        </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
   )
