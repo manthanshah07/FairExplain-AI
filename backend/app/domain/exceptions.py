@@ -63,3 +63,16 @@ class TiedAwardPriorityError(AmbiguousAwardPriorityError):
 
 class IncompatibleAwardsError(AccountingError):
     """Raised when mutually exclusive or incompatible confirmed awards are simultaneously applied."""
+
+
+# ---------------------------------------------------------------------------
+# Loan Affordability Exceptions
+# ---------------------------------------------------------------------------
+
+
+class LoanError(DomainError):
+    """Base exception for loan affordability assessment errors."""
+
+
+class InvalidLoanParametersError(LoanError):
+    """Raised when loan input parameters (tenure, income, loan amount) are invalid."""

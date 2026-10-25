@@ -1,8 +1,8 @@
 """
 FairExplain AI — Domain Layer
 =============================
-Pure Python business logic for deterministic scholarship eligibility evaluation
-and tuition accounting.
+Pure Python business logic for deterministic scholarship eligibility evaluation,
+tuition accounting, and loan affordability assessment.
 
 This package has ZERO external dependencies and is completely isolated from:
 - Web frameworks (FastAPI / Starlette)
@@ -18,6 +18,7 @@ from app.domain.enums import (
     CriterionOutcome,
     EligibilityStatus,
     EvidenceStatus,
+    LoanOutcome,
 )
 from app.domain.exceptions import (
     AccountingError,
@@ -26,7 +27,9 @@ from app.domain.exceptions import (
     DomainError,
     EligibilityError,
     IncompatibleAwardsError,
+    InvalidLoanParametersError,
     InvalidMonetaryValueError,
+    LoanError,
     MalformedPolicyError,
     MissingAwardPriorityError,
     TiedAwardPriorityError,
@@ -57,6 +60,11 @@ from app.domain.eligibility import (
 from app.domain.accounting import (
     calculate_tuition_accounting,
 )
+from app.domain.loan import (
+    LoanAffordabilityProfile,
+    LoanAffordabilityResult,
+    assess_loan_affordability,
+)
 
 __all__ = [
     # Enums
@@ -67,6 +75,7 @@ __all__ = [
     "CriterionOutcome",
     "EligibilityStatus",
     "EvidenceStatus",
+    "LoanOutcome",
     # Exceptions
     "AccountingError",
     "AmbiguousAwardPriorityError",
@@ -74,7 +83,9 @@ __all__ = [
     "DomainError",
     "EligibilityError",
     "IncompatibleAwardsError",
+    "InvalidLoanParametersError",
     "InvalidMonetaryValueError",
+    "LoanError",
     "MalformedPolicyError",
     "MissingAwardPriorityError",
     "TiedAwardPriorityError",
@@ -89,6 +100,8 @@ __all__ = [
     "EligibilityEvaluationResult",
     "GENERIC_MERIT_ATTRIBUTES",
     "InstitutionalCap",
+    "LoanAffordabilityProfile",
+    "LoanAffordabilityResult",
     "PROGRAM_ELIGIBILITY_ATTRIBUTES",
     "SENSITIVE_ATTRIBUTES",
     "SUPPORTED_ATTRIBUTES",
@@ -100,4 +113,5 @@ __all__ = [
     "evaluate_criterion",
     "evaluate_scholarship_eligibility",
     "calculate_tuition_accounting",
+    "assess_loan_affordability",
 ]

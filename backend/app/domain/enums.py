@@ -97,6 +97,14 @@ class AwardType(str, Enum):
     PERCENTAGE_OF_TUITION = "percentage_of_tuition"
 
 
+class LoanOutcome(str, Enum):
+    """Outcome recommendations for loan affordability check."""
+
+    ELIGIBLE = "eligible"
+    NEEDS_REVIEW = "needs_review"
+    NOT_RECOMMENDED = "not_recommended"
+
+
 class AttributePurpose(str, Enum):
     """Permitted purpose classifications for domain attributes."""
 
