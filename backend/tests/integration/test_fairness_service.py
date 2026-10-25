@@ -19,7 +19,11 @@ from app.models.explanation_report import AssessmentType, ExplanationReport
 
 
 @pytest.mark.anyio
-async def test_fairness_audit_and_metrics_flow(client: AsyncClient) -> None:
+async def test_fairness_audit_and_metrics_flow(
+    client: AsyncClient,
+    student_auth_headers: dict[str, str],
+    reviewer_auth_headers: dict[str, str],
+) -> None:
     """Test fairness audit intercepting prohibited terms and logging telemetry."""
     # 1. Create application and generate explanation
     app_payload = {
@@ -38,17 +42,29 @@ async def test_fairness_audit_and_metrics_flow(client: AsyncClient) -> None:
             "requested_loan": 50000.00,
         },
     }
-    create_resp = await client.post("/api/v1/application", json=app_payload)
+    create_resp = await client.post(
+        "/api/v1/application",
+        json=app_payload,
+        headers=student_auth_headers,
+    )
     app_id = create_resp.json()["data"]["application_id"]
 
     await client.post(
         "/api/v1/scholarship/evaluate",
         json={"application_id": app_id, "program_id": "MERIT_NEED_2026"},
+        headers=student_auth_headers,
     )
-    await client.post("/api/v1/explanation/generate", json={"application_id": app_id})
+    await client.post(
+        "/api/v1/explanation/generate",
+        json={"application_id": app_id},
+        headers=student_auth_headers,
+    )
 
     # 2. Audit clean explanation - should be clean
-    audit_resp = await client.post(f"/api/v1/admin/fairness/audit/{app_id}")
+    audit_resp = await client.post(
+        f"/api/v1/admin/fairness/audit/{app_id}",
+        headers=reviewer_auth_headers,
+    )
     assert audit_resp.status_code == 200
     assert audit_resp.json()["data"]["is_clean"] is True
 
@@ -67,7 +83,10 @@ async def test_fairness_audit_and_metrics_flow(client: AsyncClient) -> None:
         await session.commit()
 
     # 4. Re-run audit - should detect violation, redact, and route to needs_review
-    audit_resp2 = await client.post(f"/api/v1/admin/fairness/audit/{app_id}")
+    audit_resp2 = await client.post(
+        f"/api/v1/admin/fairness/audit/{app_id}",
+        headers=reviewer_auth_headers,
+    )
     assert audit_resp2.status_code == 200
     audit_body = audit_resp2.json()["data"]
     assert audit_body["is_clean"] is False
@@ -75,11 +94,17 @@ async def test_fairness_audit_and_metrics_flow(client: AsyncClient) -> None:
     assert "[REDACTED_DEMOGRAPHIC_PROXY]" in audit_body["sanitized_text"]
 
     # 5. Check application status transitioned to needs_review
-    get_app = await client.get(f"/api/v1/application/{app_id}")
+    get_app = await client.get(
+        f"/api/v1/application/{app_id}",
+        headers=student_auth_headers,
+    )
     assert get_app.json()["data"]["status"] == "needs_review"
 
     # 6. Verify fairness metrics endpoint
-    metrics_resp = await client.get("/api/v1/admin/fairness/metrics")
+    metrics_resp = await client.get(
+        "/api/v1/admin/fairness/metrics",
+        headers=reviewer_auth_headers,
+    )
     assert metrics_resp.status_code == 200
     metrics_body = metrics_resp.json()["data"]
     assert metrics_body["total_applications"] >= 1

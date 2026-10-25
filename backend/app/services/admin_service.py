@@ -308,6 +308,7 @@ class AdminService:
         application_id: uuid.UUID,
         request: ReviewDecisionRequest,
         db: AsyncSession,
+        reviewer: User | None = None,
     ) -> ReviewDecisionResponse:
         """Submit a mandatory-justification reviewer decision (approve, override, reject, request_evidence)."""
         rationale_clean = request.rationale.strip()
@@ -335,6 +336,9 @@ class AdminService:
         elif request.decision == "request_evidence":
             app.status = ApplicationStatus.needs_review
 
+        # Bind reviewer_id strictly to authenticated principal if present
+        actual_reviewer_id = str(reviewer.id) if reviewer else (request.reviewer_id or "reviewer")
+
         # Create immutable AuditLogEntry
         audit_entry = AuditLogEntry(
             application_id=app.id,
@@ -342,7 +346,7 @@ class AdminService:
             detail={
                 "decision": request.decision,
                 "rationale": rationale_clean,
-                "reviewer_id": request.reviewer_id,
+                "reviewer_id": actual_reviewer_id,
                 "override_details": request.override_details or {},
                 "determined_at": datetime.now(timezone.utc).isoformat(),
             },

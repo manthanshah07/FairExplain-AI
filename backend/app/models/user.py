@@ -7,15 +7,21 @@ Maps to the `users` table per DATA_MODEL.md §3.1.
 from __future__ import annotations
 
 import enum
+from typing import TYPE_CHECKING
 
-from sqlalchemy import String
+from sqlalchemy import Boolean, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
 
+if TYPE_CHECKING:
+    from app.models.application import Application
+    from app.models.refresh_token import RefreshToken
+
 
 class UserRole(str, enum.Enum):
     student = "student"
+    reviewer = "reviewer"
     university = "university"
     bank = "bank"
     scholarship_provider = "scholarship_provider"
@@ -33,11 +39,15 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     role: Mapped[UserRole] = mapped_column(
         String(50), nullable=False, default=UserRole.student
     )
-    is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    is_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     # Relationships
     applications: Mapped[list["Application"]] = relationship(
         "Application", back_populates="user", cascade="all, delete-orphan"
+    )
+    refresh_tokens: Mapped[list["RefreshToken"]] = relationship(
+        "RefreshToken", back_populates="user", cascade="all, delete-orphan"
     )
 
     def __repr__(self) -> str:

@@ -9,6 +9,7 @@ Always add new models to this file.
 """
 
 from app.models.user import User, UserRole  # noqa: F401
+from app.models.refresh_token import RefreshToken  # noqa: F401
 from app.models.application import Application, ApplicationStatus  # noqa: F401
 from app.models.academic_record import AcademicRecord  # noqa: F401
 from app.models.financial_profile import FinancialProfile  # noqa: F401
@@ -29,6 +30,7 @@ from app.models.evaluation import (  # noqa: F401
 __all__ = [
     "User",
     "UserRole",
+    "RefreshToken",
     "Application",
     "ApplicationStatus",
     "AcademicRecord",

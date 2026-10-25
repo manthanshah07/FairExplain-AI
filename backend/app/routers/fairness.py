@@ -2,6 +2,7 @@
 FairExplain AI — Fairness Audit Router
 ========================================
 REST endpoints for administrative fairness metrics and proxy screening audits.
+Protected by reviewer and admin role checks.
 """
 
 from __future__ import annotations
@@ -12,11 +13,19 @@ from typing import Any
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.dependencies import require_role
 from app.db.database import get_db
+from app.models.user import User, UserRole
 from app.schemas.common import BaseResponse
 from app.services.fairness_service import FairnessService
 
 router = APIRouter(tags=["Fairness"])
+
+_reviewer_guard = require_role([
+    UserRole.reviewer,
+    UserRole.admin,
+    UserRole.university,
+])
 
 
 @router.get(
@@ -25,6 +34,7 @@ router = APIRouter(tags=["Fairness"])
     summary="Retrieve platform cohort fairness metrics and proxy flag rates",
 )
 async def get_fairness_metrics(
+    current_user: User = Depends(_reviewer_guard),
     db: AsyncSession = Depends(get_db),
 ) -> BaseResponse[dict[str, Any]]:
     """Fetch cohort-level fairness analytics, disparate impact ratio, and flag rates."""
@@ -43,6 +53,7 @@ async def get_fairness_metrics(
 )
 async def audit_application(
     application_id: uuid.UUID,
+    current_user: User = Depends(_reviewer_guard),
     db: AsyncSession = Depends(get_db),
 ) -> BaseResponse[dict[str, Any]]:
     """Scan explanation text, redact prohibited terms, and route flagged cases to reviewer queue."""

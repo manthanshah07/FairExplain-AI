@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
+from app.routers.auth import router as auth_router
 from app.routers.applications import router as applications_router
 from app.routers.scholarship import router as scholarship_router
 from app.routers.loan import router as loan_router
@@ -18,6 +19,9 @@ from app.routers.admin import router as admin_router
 from app.routers.report import router as report_router
 
 api_router = APIRouter(prefix="/api/v1")
+
+# Authentication
+api_router.include_router(auth_router, prefix="/auth")
 
 # Feature routers
 api_router.include_router(applications_router, prefix="/application")

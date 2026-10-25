@@ -2,7 +2,7 @@ name: FairExplain AI CI Pipeline
 
 on:
   push:
-    branches: [main, "feature/**"]
+    branches: [main, "feature/**", "fix/**"]
   pull_request:
     branches: [main]
 
@@ -29,7 +29,7 @@ jobs:
       - name: Run Domain Pure Unit Tests
         working-directory: ./backend
         run: |
-          PYTHONPATH=. python3 -m unittest discover -s tests/unit -p "test_*.py"
+          PYTHONPATH=. pytest tests/unit -v
 
   backend-integration-tests:
     name: Backend Integration Tests
@@ -49,6 +49,16 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+
+      minio:
+        image: minio/minio:RELEASE.2024-01-01T00-00-00Z
+        env:
+          MINIO_ROOT_USER: minio_test_user
+          MINIO_ROOT_PASSWORD: minio_test_password_123
+        ports:
+          - 9000:9000
+        options: >-
+          server /data
 
     steps:
       - name: Checkout repository
@@ -72,13 +82,25 @@ jobs:
         run: |
           alembic upgrade head
 
+      - name: Initialize MinIO Test Bucket
+        run: |
+          docker run --network host --rm minio/mc:RELEASE.2024-01-01T00-00-00Z \
+            sh -c "mc alias set myminio http://localhost:9000 minio_test_user minio_test_password_123 && mc mb --ignore-existing myminio/fairexplain-test-bucket && mc anonymous set none myminio/fairexplain-test-bucket"
+
       - name: Run Pytest Integration Suite
         working-directory: ./backend
         env:
           APP_ENV: development
           DATABASE_URL: postgresql+asyncpg://fairexplain:test_password@localhost:5432/fairexplain_test
           SECRET_KEY: test-secret-key-for-ci-pipeline-only
+          JWT_SECRET_KEY: test-jwt-secret-key-for-ci-pipeline-only-32bytes
           ALLOWED_ORIGINS: '["http://localhost:5173", "http://localhost:3000"]'
+          STORAGE_BACKEND: s3
+          S3_BUCKET_NAME: fairexplain-test-bucket
+          S3_ENDPOINT_URL: http://localhost:9000
+          AWS_ACCESS_KEY_ID: minio_test_user
+          AWS_SECRET_ACCESS_KEY: minio_test_password_123
+          AWS_DEFAULT_REGION: us-east-1
         run: |
           pytest tests -v
 
@@ -90,19 +112,28 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
       - name: Set up Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: "npm"
-          cache-dependency-path: frontend/package-lock.json
+          cache: "pnpm"
+          cache-dependency-path: frontend/pnpm-lock.yaml
 
       - name: Install dependencies
         working-directory: ./frontend
-        run: npm ci
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Unit Tests
+        working-directory: ./frontend
+        run: pnpm run test
 
       - name: Lint and Typecheck
         working-directory: ./frontend
         run: |
-          npm run lint
-          npm run build
+          pnpm run lint
+          pnpm run build

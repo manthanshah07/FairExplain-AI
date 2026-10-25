@@ -14,7 +14,10 @@ from app.services.llm.prompt_templates import MANDATORY_HUMAN_REVIEW_NOTICE
 
 
 @pytest.mark.anyio
-async def test_explanation_generation_flow(client: AsyncClient) -> None:
+async def test_explanation_generation_flow(
+    client: AsyncClient,
+    student_auth_headers: dict[str, str],
+) -> None:
     """Test full journey: create application -> evaluate scholarship -> generate grounded explanation."""
     # 1. Create application
     app_payload = {
@@ -33,7 +36,11 @@ async def test_explanation_generation_flow(client: AsyncClient) -> None:
             "requested_loan": 70000.00,
         },
     }
-    create_resp = await client.post("/api/v1/application", json=app_payload)
+    create_resp = await client.post(
+        "/api/v1/application",
+        json=app_payload,
+        headers=student_auth_headers,
+    )
     assert create_resp.status_code == 201
     app_id = create_resp.json()["data"]["application_id"]
 
@@ -41,12 +48,15 @@ async def test_explanation_generation_flow(client: AsyncClient) -> None:
     eval_resp = await client.post(
         "/api/v1/scholarship/evaluate",
         json={"application_id": app_id, "program_id": "MERIT_NEED_2026"},
+        headers=student_auth_headers,
     )
     assert eval_resp.status_code == 200
 
     # 3. Generate explanation
     exp_resp = await client.post(
-        "/api/v1/explanation/generate", json={"application_id": app_id}
+        "/api/v1/explanation/generate",
+        json={"application_id": app_id},
+        headers=student_auth_headers,
     )
     assert exp_resp.status_code == 200
     exp_body = exp_resp.json()
@@ -57,7 +67,10 @@ async def test_explanation_generation_flow(client: AsyncClient) -> None:
     assert len(exp_data["reasons"]) >= 1
 
     # 4. Retrieve saved explanation
-    get_exp_resp = await client.get(f"/api/v1/explanation/{app_id}")
+    get_exp_resp = await client.get(
+        f"/api/v1/explanation/{app_id}",
+        headers=student_auth_headers,
+    )
     assert get_exp_resp.status_code == 200
     get_exp_body = get_exp_resp.json()
     assert get_exp_body["data"]["explanation"]["human_review_notice"] == MANDATORY_HUMAN_REVIEW_NOTICE

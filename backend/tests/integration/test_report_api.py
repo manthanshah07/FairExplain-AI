@@ -12,7 +12,10 @@ from httpx import AsyncClient
 
 
 @pytest.mark.anyio
-async def test_download_report_pdf(client: AsyncClient) -> None:
+async def test_download_report_pdf(
+    client: AsyncClient,
+    student_auth_headers: dict[str, str],
+) -> None:
     """Test full journey: create application -> evaluate -> download tamper-evident PDF."""
     app_payload = {
         "name": "PDF Report Applicant",
@@ -30,17 +33,29 @@ async def test_download_report_pdf(client: AsyncClient) -> None:
             "requested_loan": 65000.00,
         },
     }
-    create_resp = await client.post("/api/v1/application", json=app_payload)
+    create_resp = await client.post(
+        "/api/v1/application",
+        json=app_payload,
+        headers=student_auth_headers,
+    )
     app_id = create_resp.json()["data"]["application_id"]
 
     await client.post(
         "/api/v1/scholarship/evaluate",
         json={"application_id": app_id, "program_id": "MERIT_NEED_2026"},
+        headers=student_auth_headers,
     )
-    await client.post("/api/v1/explanation/generate", json={"application_id": app_id})
+    await client.post(
+        "/api/v1/explanation/generate",
+        json={"application_id": app_id},
+        headers=student_auth_headers,
+    )
 
     # Download report
-    resp = await client.get(f"/api/v1/report/{app_id}/download")
+    resp = await client.get(
+        f"/api/v1/report/{app_id}/download",
+        headers=student_auth_headers,
+    )
     assert resp.status_code == 200
     assert resp.headers["content-type"] == "application/pdf"
     assert "X-Audit-Digest" in resp.headers
@@ -49,8 +64,14 @@ async def test_download_report_pdf(client: AsyncClient) -> None:
 
 
 @pytest.mark.anyio
-async def test_download_report_404_for_missing(client: AsyncClient) -> None:
+async def test_download_report_404_for_missing(
+    client: AsyncClient,
+    student_auth_headers: dict[str, str],
+) -> None:
     """Download report for non-existent application returns 404."""
     fake_id = str(uuid.uuid4())
-    resp = await client.get(f"/api/v1/report/{fake_id}/download")
+    resp = await client.get(
+        f"/api/v1/report/{fake_id}/download",
+        headers=student_auth_headers,
+    )
     assert resp.status_code == 404
