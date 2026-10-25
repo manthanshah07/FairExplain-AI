@@ -1,0 +1,53 @@
+# ============================================================
+# FairExplain AI — Backend Multi-Stage Production Dockerfile
+# Python 3.12-slim, non-root user, minimal attack surface
+# ============================================================
+
+# Stage 1: Build & wheels compilation
+FROM python:3.12-slim AS builder
+
+WORKDIR /build
+
+# Install compilation toolchain
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    libpq-dev \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY backend/requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip wheel --no-cache-dir --no-deps --wheel-dir /build/wheels -r requirements.txt
+
+# Stage 2: Production runtime image
+FROM python:3.12-slim AS runner
+
+WORKDIR /app
+
+# Install runtime PostgreSQL client library and curl for healthcheck
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy pre-built wheels from builder
+COPY --from=builder /build/wheels /wheels
+COPY --from=builder /build/requirements.txt .
+RUN pip install --no-cache-dir /wheels/* && rm -rf /wheels
+
+# Create non-root system user
+RUN groupadd -g 1001 appgroup && \
+    useradd -u 1001 -g appgroup -s /bin/sh -m appuser
+
+# Copy backend application source
+COPY backend /app
+RUN chown -R appuser:appgroup /app
+
+USER appuser
+
+EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
