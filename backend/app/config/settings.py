@@ -91,7 +91,12 @@ class Settings(BaseSettings):
     @field_validator("database_url", mode="before")
     @classmethod
     def normalize_database_url(cls, value: str) -> str:
-        """Ensure asyncpg driver is specified and normalize SSL parameters for Neon / cloud Postgres."""
+        """
+        Ensure asyncpg driver is specified and strip query parameters unsupported by asyncpg
+        (e.g., channel_binding, sslmode, endpoint from Neon / Supabase connection strings).
+        """
+        from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
+
         if not isinstance(value, str):
             return value
         url = value.strip()
@@ -99,10 +104,43 @@ class Settings(BaseSettings):
             url = url.replace("postgres://", "postgresql+asyncpg://", 1)
         elif url.startswith("postgresql://") and not url.startswith("postgresql+asyncpg://"):
             url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
-        # asyncpg prefers ssl=require over sslmode=require
-        if "sslmode=require" in url:
-            url = url.replace("sslmode=require", "ssl=require")
-        return url
+
+        parsed = urlparse(url)
+        if not parsed.query:
+            return url
+
+        params = parse_qs(parsed.query, keep_blank_values=True)
+        # libpq / psql parameters unsupported by asyncpg keyword arguments
+        unsupported = {
+            "channel_binding",
+            "sslmode",
+            "endpoint",
+            "gssencmode",
+            "sslcert",
+            "sslkey",
+            "sslrootcert",
+        }
+        clean_params: dict[str, list[str]] = {}
+        needs_ssl = "sslmode" in params or "ssl" in params
+
+        for k, v in params.items():
+            if k in unsupported:
+                continue
+            clean_params[k] = v
+
+        # When connecting to cloud Postgres (Neon/Supabase) via SSL, pass ssl=require to asyncpg
+        if needs_ssl and "ssl" not in clean_params:
+            clean_params["ssl"] = ["require"]
+
+        new_query = urlencode(clean_params, doseq=True)
+        return urlunparse((
+            parsed.scheme,
+            parsed.netloc,
+            parsed.path,
+            parsed.params,
+            new_query,
+            parsed.fragment,
+        ))
 
     @field_validator("allowed_origins", mode="before")
     @classmethod
