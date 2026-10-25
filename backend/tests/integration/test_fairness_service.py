@@ -14,6 +14,7 @@ from sqlalchemy import select
 from app.db.database import AsyncSessionFactory
 from app.models.application import Application, ApplicationStatus
 from app.models.audit_log import AuditEventType, AuditLogEntry
+from app.models.evaluation import ScholarshipEvaluationModel
 from app.models.explanation_report import AssessmentType, ExplanationReport
 
 
@@ -53,14 +54,15 @@ async def test_fairness_audit_and_metrics_flow(client: AsyncClient) -> None:
 
     # 3. Inject a prohibited term into ExplanationReport directly to test auditor intercept
     async with AsyncSessionFactory() as session:
-        stmt = (
-            select(ExplanationReport)
-            .join(Application, Application.id == uuid.UUID(app_id))
+        eval_res = await session.execute(
+            select(ScholarshipEvaluationModel).where(ScholarshipEvaluationModel.application_id == uuid.UUID(app_id))
         )
-        res = await session.execute(select(ExplanationReport))
-        reports = res.scalars().all()
-        # Find the one for our app
-        rep = reports[-1]
+        eval_obj = eval_res.scalars().first()
+        assert eval_obj is not None
+        rep_res = await session.execute(
+            select(ExplanationReport).where(ExplanationReport.assessment_id == eval_obj.id)
+        )
+        rep = rep_res.scalar_one()
         rep.recommendation_text = "Approved based on regional caste quota and gender."
         await session.commit()
 
