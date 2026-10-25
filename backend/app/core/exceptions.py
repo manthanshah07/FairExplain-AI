@@ -93,6 +93,20 @@ def register_exception_handlers(app: FastAPI) -> None:
             status_code=status.HTTP_400_BAD_REQUEST,
         )
 
+    from app.domain.exceptions import DomainError
+
+    @app.exception_handler(DomainError)
+    async def domain_error_handler(
+        request: Request, exc: DomainError
+    ) -> JSONResponse:
+        """Handle pure domain rule or invariant violations."""
+        logger.warning("domain_error", path=str(request.url), error=str(exc))
+        return _error_response(
+            message=str(exc),
+            errors=[exc.__class__.__name__],
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        )
+
     @app.exception_handler(PermissionError)
     async def permission_error_handler(
         request: Request, exc: PermissionError

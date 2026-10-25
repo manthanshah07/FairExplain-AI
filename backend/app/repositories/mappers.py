@@ -45,6 +45,22 @@ from app.models.policy import EligibilityCriterionModel, ScholarshipPolicyModel
 
 
 # ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+
+def _serialize_for_json(val: Any) -> Any:
+    """Ensure Decimal and custom objects are JSON-serializable for SQL JSON columns."""
+    if isinstance(val, Decimal):
+        return float(val)
+    if isinstance(val, (list, tuple, set, frozenset)):
+        return [_serialize_for_json(x) for x in val]
+    if isinstance(val, dict):
+        return {k: _serialize_for_json(v) for k, v in val.items()}
+    return val
+
+
+# ---------------------------------------------------------------------------
 # Policy & Criteria Mappers
 # ---------------------------------------------------------------------------
 
@@ -55,7 +71,7 @@ def domain_to_orm_criterion(criterion: EligibilityCriterion) -> EligibilityCrite
         criterion_id=criterion.criterion_id,
         attribute=criterion.attribute,
         operator=criterion.operator.value,
-        target_value=criterion.target_value,
+        target_value=_serialize_for_json(criterion.target_value),
         is_mandatory=criterion.is_mandatory,
         required_evidence=criterion.required_evidence,
         description=criterion.description,
@@ -156,8 +172,8 @@ def domain_to_orm_criterion_eval(
         criterion_id=crit_eval.criterion_id,
         attribute=crit_eval.attribute,
         operator=crit_eval.operator,
-        target_value=crit_eval.target_value,
-        actual_value=crit_eval.actual_value,
+        target_value=_serialize_for_json(crit_eval.target_value),
+        actual_value=_serialize_for_json(crit_eval.actual_value),
         status=crit_eval.status.value,
         is_mandatory=crit_eval.is_mandatory,
         evidence_required=crit_eval.evidence_required,
@@ -199,7 +215,7 @@ def domain_to_orm_evaluation(
         satisfied_count=result.satisfied_count,
         failed_count=result.failed_count,
         pending_count=result.pending_count,
-        frozen_applicant_snapshot=dict(applicant_snapshot or {}),
+        frozen_applicant_snapshot=_serialize_for_json(dict(applicant_snapshot or {})),
     )
     model.criteria_evaluations = [
         domain_to_orm_criterion_eval(c) for c in result.criteria_evaluations
