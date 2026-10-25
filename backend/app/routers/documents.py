@@ -2,6 +2,7 @@
 FairExplain AI — Documents Router
 ===================================
 REST endpoints for secure document intake, OCR processing, and verification.
+Protected by BOLA authorization and private S3-compatible storage with pre-signed URLs.
 """
 
 from __future__ import annotations
@@ -13,9 +14,12 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, s
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.dependencies import get_current_active_user
 from app.core.storage import get_storage_backend
 from app.db.database import get_db
+from app.models.application import Application
 from app.models.uploaded_document import DocumentType, UploadedDocument
+from app.models.user import User, UserRole
 from app.schemas.common import BaseResponse
 from app.services.ocr.extractor import DocumentKeyExtractor
 from app.services.ocr.pypdf_provider import PyPDFOCRProvider
@@ -33,6 +37,30 @@ ALLOWED_MIME_TYPES = {
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
 
 
+async def _assert_application_access(
+    application_id: uuid.UUID,
+    user: User,
+    db: AsyncSession,
+) -> None:
+    """Ensure user is the owner of the application or an authorized reviewer/admin."""
+    user_role_str = user.role.value if hasattr(user.role, "value") else str(user.role)
+    if user_role_str in [UserRole.reviewer.value, UserRole.admin.value, UserRole.university.value]:
+        return
+
+    res = await db.execute(select(Application.user_id).where(Application.id == application_id))
+    owner_id = res.scalar_one_or_none()
+    if not owner_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Application {application_id} not found.",
+        )
+    if owner_id != user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied to requested application documents.",
+        )
+
+
 @router.post(
     "/upload",
     response_model=BaseResponse[dict[str, Any]],
@@ -43,10 +71,14 @@ async def upload_document(
     application_id: uuid.UUID = Form(...),
     doc_type: str = Form(...),
     file: UploadFile = File(...),
+    current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ) -> BaseResponse[dict[str, Any]]:
-    """Secure document intake with validation, SHA-256 deduplication, and automated OCR."""
-    # 1. Validate MIME type
+    """Secure document intake with BOLA validation, SHA-256 deduplication, and automated OCR."""
+    # 1. Enforce BOLA access control
+    await _assert_application_access(application_id, current_user, db)
+
+    # 2. Validate MIME type
     content_type = file.content_type or "application/octet-stream"
     if content_type.lower() not in ALLOWED_MIME_TYPES:
         raise HTTPException(
@@ -54,7 +86,7 @@ async def upload_document(
             detail=f"Unsupported file type '{content_type}'. Allowed types: PDF, PNG, JPEG.",
         )
 
-    # 2. Read bytes & validate size
+    # 3. Read bytes & validate size
     content = await file.read()
     if len(content) > MAX_FILE_SIZE:
         raise HTTPException(
@@ -62,23 +94,23 @@ async def upload_document(
             detail="File exceeds maximum permissible size of 10 MB.",
         )
 
-    # 3. Store file securely
+    # 4. Store file securely via pluggable storage backend (S3 / MinIO)
     storage = get_storage_backend()
     file_url, sha256_hash = await storage.save_file(
         filename=file.filename or "upload.pdf",
         content=content,
         application_id=str(application_id),
+        content_type=content_type,
     )
 
-    # 4. OCR Extraction
+    # 5. OCR Extraction
     ocr_provider = PyPDFOCRProvider()
     ocr_result = await ocr_provider.extract_text(content, content_type)
     extracted_fields = DocumentKeyExtractor.extract_document_fields(
         doc_type=doc_type, text=ocr_result.raw_text
     )
 
-    # 5. Save UploadedDocument record
-    # Validate doc_type enum
+    # 6. Save UploadedDocument record
     try:
         norm_doc_type = DocumentType(doc_type.lower())
     except ValueError:
@@ -116,13 +148,16 @@ async def upload_document(
 @router.get(
     "/application/{application_id}",
     response_model=BaseResponse[list[dict[str, Any]]],
-    summary="List uploaded documents for an application",
+    summary="List uploaded documents for an application with BOLA protection",
 )
 async def list_documents(
     application_id: uuid.UUID,
+    current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ) -> BaseResponse[list[dict[str, Any]]]:
-    """Retrieve all uploaded documents and their extracted metadata."""
+    """Retrieve all uploaded documents and metadata for an authorized application."""
+    await _assert_application_access(application_id, current_user, db)
+
     stmt = (
         select(UploadedDocument)
         .where(UploadedDocument.application_id == application_id)
@@ -149,6 +184,42 @@ async def list_documents(
     )
 
 
+@router.get(
+    "/{document_id}/download-url",
+    response_model=BaseResponse[dict[str, Any]],
+    summary="Generate time-limited secure pre-signed download URL for a document",
+)
+async def get_document_download_url(
+    document_id: uuid.UUID,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+) -> BaseResponse[dict[str, Any]]:
+    """Generate 15-minute secure pre-signed download URL after verifying document ownership."""
+    stmt = select(UploadedDocument).where(UploadedDocument.id == document_id)
+    res = await db.execute(stmt)
+    doc = res.scalar_one_or_none()
+    if not doc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Document {document_id} not found.",
+        )
+
+    await _assert_application_access(doc.application_id, current_user, db)
+
+    storage = get_storage_backend()
+    download_url = await storage.get_download_url(doc.file_url, expires_in=900)
+
+    return BaseResponse[dict[str, Any]](
+        success=True,
+        data={
+            "document_id": str(doc.id),
+            "download_url": download_url,
+            "expires_in": 900,
+        },
+        message="Pre-signed download URL generated.",
+    )
+
+
 @router.post(
     "/verify/{application_id}",
     response_model=BaseResponse[dict[str, Any]],
@@ -156,9 +227,11 @@ async def list_documents(
 )
 async def verify_documents(
     application_id: uuid.UUID,
+    current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ) -> BaseResponse[dict[str, Any]]:
-    """Cross-check extracted document numbers with application record."""
+    """Cross-check extracted document numbers with application record with access protection."""
+    await _assert_application_access(application_id, current_user, db)
     result = await VerificationService.verify_application_documents(application_id, db)
     return BaseResponse[dict[str, Any]](
         success=True,

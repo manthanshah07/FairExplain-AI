@@ -15,7 +15,10 @@ from httpx import AsyncClient
 
 
 @pytest.mark.anyio
-async def test_full_application_and_evaluation_flow(client: AsyncClient) -> None:
+async def test_full_application_and_evaluation_flow(
+    client: AsyncClient,
+    student_auth_headers: dict[str, str],
+) -> None:
     """Test full journey: create application -> evaluate scholarship -> assess loan."""
     # 1. Create application
     app_payload = {
@@ -35,7 +38,11 @@ async def test_full_application_and_evaluation_flow(client: AsyncClient) -> None
         },
     }
 
-    create_resp = await client.post("/api/v1/application", json=app_payload)
+    create_resp = await client.post(
+        "/api/v1/application",
+        json=app_payload,
+        headers=student_auth_headers,
+    )
     assert create_resp.status_code == 201
     app_body = create_resp.json()
     assert app_body["success"] is True
@@ -43,7 +50,10 @@ async def test_full_application_and_evaluation_flow(client: AsyncClient) -> None
     assert app_id is not None
 
     # 2. Get application
-    get_resp = await client.get(f"/api/v1/application/{app_id}")
+    get_resp = await client.get(
+        f"/api/v1/application/{app_id}",
+        headers=student_auth_headers,
+    )
     assert get_resp.status_code == 200
     assert get_resp.json()["data"]["application_id"] == app_id
 
@@ -53,7 +63,9 @@ async def test_full_application_and_evaluation_flow(client: AsyncClient) -> None
         "program_id": "MERIT_NEED_2026",
     }
     scholarship_resp = await client.post(
-        "/api/v1/scholarship/evaluate", json=scholarship_payload
+        "/api/v1/scholarship/evaluate",
+        json=scholarship_payload,
+        headers=student_auth_headers,
     )
     assert scholarship_resp.status_code == 200
     scholarship_body = scholarship_resp.json()
@@ -68,7 +80,11 @@ async def test_full_application_and_evaluation_flow(client: AsyncClient) -> None
         "application_id": app_id,
         "tenure_months": 60,
     }
-    loan_resp = await client.post("/api/v1/loan/assess", json=loan_payload)
+    loan_resp = await client.post(
+        "/api/v1/loan/assess",
+        json=loan_payload,
+        headers=student_auth_headers,
+    )
     assert loan_resp.status_code == 200
     loan_body = loan_resp.json()
     assert loan_body["success"] is True
@@ -80,7 +96,10 @@ async def test_full_application_and_evaluation_flow(client: AsyncClient) -> None
 
 
 @pytest.mark.anyio
-async def test_application_validation_error_envelope(client: AsyncClient) -> None:
+async def test_application_validation_error_envelope(
+    client: AsyncClient,
+    student_auth_headers: dict[str, str],
+) -> None:
     """Verify validation errors adhere to standard error response envelope."""
     # Invalid CGPA > 10.0
     bad_payload = {
@@ -100,7 +119,11 @@ async def test_application_validation_error_envelope(client: AsyncClient) -> Non
         },
     }
 
-    resp = await client.post("/api/v1/application", json=bad_payload)
+    resp = await client.post(
+        "/api/v1/application",
+        json=bad_payload,
+        headers=student_auth_headers,
+    )
     assert resp.status_code == 422
     body = resp.json()
     assert body["success"] is False
@@ -109,8 +132,14 @@ async def test_application_validation_error_envelope(client: AsyncClient) -> Non
 
 
 @pytest.mark.anyio
-async def test_non_existent_application_404(client: AsyncClient) -> None:
+async def test_non_existent_application_404(
+    client: AsyncClient,
+    student_auth_headers: dict[str, str],
+) -> None:
     """Verify 404 for missing application ID."""
     fake_id = str(uuid.uuid4())
-    resp = await client.get(f"/api/v1/application/{fake_id}")
+    resp = await client.get(
+        f"/api/v1/application/{fake_id}",
+        headers=student_auth_headers,
+    )
     assert resp.status_code == 404

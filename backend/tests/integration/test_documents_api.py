@@ -15,7 +15,10 @@ from httpx import AsyncClient
 
 
 @pytest.mark.anyio
-async def test_document_upload_and_verification_pipeline(client: AsyncClient) -> None:
+async def test_document_upload_and_verification_pipeline(
+    client: AsyncClient,
+    student_auth_headers: dict[str, str],
+) -> None:
     """Test full document upload, extraction, and automated cross-verification."""
     # 1. Create an application first
     app_payload = {
@@ -34,7 +37,11 @@ async def test_document_upload_and_verification_pipeline(client: AsyncClient) ->
             "requested_loan": 80000.00,
         },
     }
-    create_resp = await client.post("/api/v1/application", json=app_payload)
+    create_resp = await client.post(
+        "/api/v1/application",
+        json=app_payload,
+        headers=student_auth_headers,
+    )
     assert create_resp.status_code == 201
     app_id = create_resp.json()["data"]["application_id"]
 
@@ -47,21 +54,32 @@ async def test_document_upload_and_verification_pipeline(client: AsyncClient) ->
         "application_id": app_id,
         "doc_type": "marksheet",
     }
-    upload_resp = await client.post("/api/v1/documents/upload", data=data, files=files)
+    upload_resp = await client.post(
+        "/api/v1/documents/upload",
+        data=data,
+        files=files,
+        headers=student_auth_headers,
+    )
     assert upload_resp.status_code == 201
     upload_body = upload_resp.json()
     assert upload_body["success"] is True
     assert upload_body["data"]["extracted_fields"]["cgpa"] == 8.75
 
     # 3. List documents for application
-    list_resp = await client.get(f"/api/v1/documents/application/{app_id}")
+    list_resp = await client.get(
+        f"/api/v1/documents/application/{app_id}",
+        headers=student_auth_headers,
+    )
     assert list_resp.status_code == 200
     docs = list_resp.json()["data"]
     assert len(docs) == 1
     assert docs[0]["doc_type"] == "marksheet"
 
     # 4. Trigger verification - should succeed with no discrepancies
-    verify_resp = await client.post(f"/api/v1/documents/verify/{app_id}")
+    verify_resp = await client.post(
+        f"/api/v1/documents/verify/{app_id}",
+        headers=student_auth_headers,
+    )
     assert verify_resp.status_code == 200
     verify_body = verify_resp.json()["data"]
     assert verify_body["verified"] is True
@@ -69,7 +87,10 @@ async def test_document_upload_and_verification_pipeline(client: AsyncClient) ->
 
 
 @pytest.mark.anyio
-async def test_document_verification_mismatch_triggers_review(client: AsyncClient) -> None:
+async def test_document_verification_mismatch_triggers_review(
+    client: AsyncClient,
+    student_auth_headers: dict[str, str],
+) -> None:
     """Discrepant document upload triggers mismatch flag and needs_review status."""
     # 1. Create application with reported income 500,000
     app_payload = {
@@ -88,7 +109,11 @@ async def test_document_verification_mismatch_triggers_review(client: AsyncClien
             "requested_loan": 50000.00,
         },
     }
-    create_resp = await client.post("/api/v1/application", json=app_payload)
+    create_resp = await client.post(
+        "/api/v1/application",
+        json=app_payload,
+        headers=student_auth_headers,
+    )
     app_id = create_resp.json()["data"]["application_id"]
 
     # 2. Upload income proof showing 900,000 (>5% diff)
@@ -100,10 +125,18 @@ async def test_document_verification_mismatch_triggers_review(client: AsyncClien
         "application_id": app_id,
         "doc_type": "income_proof",
     }
-    await client.post("/api/v1/documents/upload", data=data, files=files)
+    await client.post(
+        "/api/v1/documents/upload",
+        data=data,
+        files=files,
+        headers=student_auth_headers,
+    )
 
     # 3. Trigger verification - should flag discrepancy
-    verify_resp = await client.post(f"/api/v1/documents/verify/{app_id}")
+    verify_resp = await client.post(
+        f"/api/v1/documents/verify/{app_id}",
+        headers=student_auth_headers,
+    )
     assert verify_resp.status_code == 200
     verify_body = verify_resp.json()["data"]
     assert verify_body["verified"] is False
@@ -111,14 +144,42 @@ async def test_document_verification_mismatch_triggers_review(client: AsyncClien
     assert verify_body["discrepancies"][0]["field"] == "household_income"
 
     # 4. Verify application status transitioned to needs_review
-    get_resp = await client.get(f"/api/v1/application/{app_id}")
+    get_resp = await client.get(
+        f"/api/v1/application/{app_id}",
+        headers=student_auth_headers,
+    )
     assert get_resp.json()["data"]["status"] == "needs_review"
 
 
 @pytest.mark.anyio
-async def test_document_upload_size_limit(client: AsyncClient) -> None:
+async def test_document_upload_size_limit(
+    client: AsyncClient,
+    student_auth_headers: dict[str, str],
+) -> None:
     """Files exceeding 10MB are rejected with 413."""
-    app_id = str(uuid.uuid4())
+    # Create application first so student is authorized
+    create_resp = await client.post(
+        "/api/v1/application",
+        json={
+            "name": "Size Limit Applicant",
+            "email": f"sizelimit_{uuid.uuid4().hex[:8]}@example.com",
+            "academic_record": {
+                "cgpa": 8.0,
+                "tenth_percent": 85.0,
+                "twelfth_percent": 85.0,
+                "backlogs": 0,
+            },
+            "financial_profile": {
+                "household_income": 500000.00,
+                "existing_emi": 0.00,
+                "tuition_fee": 100000.00,
+                "requested_loan": 50000.00,
+            },
+        },
+        headers=student_auth_headers,
+    )
+    app_id = create_resp.json()["data"]["application_id"]
+
     oversized_content = b"0" * (11 * 1024 * 1024)  # 11 MB
     files = {
         "file": ("oversized.pdf", oversized_content, "application/pdf"),
@@ -127,5 +188,10 @@ async def test_document_upload_size_limit(client: AsyncClient) -> None:
         "application_id": app_id,
         "doc_type": "marksheet",
     }
-    resp = await client.post("/api/v1/documents/upload", data=data, files=files)
+    resp = await client.post(
+        "/api/v1/documents/upload",
+        data=data,
+        files=files,
+        headers=student_auth_headers,
+    )
     assert resp.status_code == 413

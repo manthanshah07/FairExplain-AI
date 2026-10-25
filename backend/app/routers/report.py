@@ -12,7 +12,9 @@ from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.dependencies import get_current_active_user
 from app.db.database import get_db
+from app.models.user import User, UserRole
 from app.repositories.application_repository import ApplicationRepository
 from app.repositories.evaluation_repository import EvaluationRepository
 from app.services.explanation_service import ExplanationService
@@ -43,6 +45,7 @@ router = APIRouter(tags=["Reporting"])
 )
 async def download_report(
     application_id: uuid.UUID,
+    current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ) -> Response:
     """Generate, cryptographically sign, and stream official assessment report PDF."""
@@ -54,6 +57,23 @@ async def download_report(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Application {application_id} not found.",
+        )
+
+    # BOLA ownership check
+    user_role_str = (
+        current_user.role.value
+        if hasattr(current_user.role, "value")
+        else str(current_user.role)
+    )
+    is_privileged = user_role_str in [
+        UserRole.reviewer.value,
+        UserRole.admin.value,
+        UserRole.university.value,
+    ]
+    if app.user_id != current_user.id and not is_privileged:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied to requested application report.",
         )
 
     eval_model = await eval_repo.get_latest_evaluation(application_id)

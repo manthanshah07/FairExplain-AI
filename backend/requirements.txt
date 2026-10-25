@@ -24,10 +24,14 @@ pydantic-settings==2.6.1
 # Environment
 python-dotenv==1.0.1
 
-# Security
+# Security & Authentication
 passlib[bcrypt]==1.7.4
+bcrypt>=4.2.0
 python-jose[cryptography]==3.3.0
 slowapi>=0.1.10
+
+# Object Storage
+aioboto3>=13.3.0
 
 # HTTP utilities
 httpx==0.28.1
@@ -38,4 +42,3 @@ structlog==24.4.0
 # Testing
 pytest==8.3.4
 pytest-asyncio==0.24.0
-httpx==0.28.1

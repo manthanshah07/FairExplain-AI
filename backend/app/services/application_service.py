@@ -12,6 +12,7 @@ from decimal import Decimal
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.security import hash_password
 from app.models.academic_record import AcademicRecord
 from app.models.application import Application, ApplicationStatus
 from app.models.financial_profile import FinancialProfile
@@ -30,28 +31,34 @@ class ApplicationService:
 
     @staticmethod
     async def create_application(
-        req: ApplicationCreateRequest, db: AsyncSession
+        req: ApplicationCreateRequest,
+        db: AsyncSession,
+        current_user: User | None = None,
     ) -> ApplicationResponseData:
         """Create user (if needed), application, academic record, and financial profile."""
         app_repo = ApplicationRepository(db)
 
         # 1. Resolve or create user
-        user: User | None = None
-        if req.user_id:
+        user: User | None = current_user
+        if not user and req.user_id:
             res = await db.execute(select(User).where(User.id == req.user_id))
             user = res.scalar_one_or_none()
 
         if not user:
             # Check by email
-            res = await db.execute(select(User).where(User.email == req.email))
+            res = await db.execute(select(User).where(User.email.ilike(req.email.strip())))
             user = res.scalar_one_or_none()
 
         if not user:
+            # Generate secure random password for non-authenticated intake
+            secure_random_pwd = uuid.uuid4().hex + uuid.uuid4().hex
             user = User(
-                name=req.name,
-                email=req.email,
-                hashed_password="demo_hashed_password",
+                name=req.name.strip(),
+                email=req.email.strip().lower(),
+                hashed_password=hash_password(secure_random_pwd),
                 role=UserRole.student,
+                is_active=True,
+                is_verified=True,
             )
             db.add(user)
             await db.flush()

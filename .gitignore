@@ -6,3 +6,6 @@
 backend/.env
 backend/uploads/
 uploads/
+
+# OS metadata
+.DS_Store
