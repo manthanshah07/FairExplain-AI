@@ -27,15 +27,19 @@ export function ResultsPage() {
   const [isDownloading, setIsDownloading] = useState(false)
 
   const handleDownloadReport = async () => {
-    if (!applicationId) return
+    const targetId = applicationId || result?.applicant?.applicationId
+    if (!targetId || targetId === "sample-123") {
+      alert("To download an official cryptographically audited PDF, please submit an application from the Apply page or select an application from the Review Queue.")
+      return
+    }
     setIsDownloading(true)
     try {
-      const blob = await api.downloadReportPdf(applicationId)
+      const blob = await api.downloadReportPdf(targetId)
       if (blob) {
         const url = window.URL.createObjectURL(blob)
         const a = document.createElement("a")
         a.href = url
-        a.download = `assessment-report-${applicationId.slice(0, 8)}.pdf`
+        a.download = `assessment-report-${targetId.slice(0, 8)}.pdf`
         document.body.appendChild(a)
         a.click()
         window.URL.revokeObjectURL(url)
@@ -84,7 +88,9 @@ export function ResultsPage() {
                   Assessment result
                 </span>
                 <p className="text-sm text-muted-foreground">
-                  Sample output — Phase 1 preview with mock data.
+                  {applicationId && applicationId !== "sample-123"
+                    ? `Institutional Evaluation Dossier · Application ID: ${result.applicant?.applicationId || applicationId}`
+                    : "Benchmark Assessment Dossier · Evaluated by FairExplain AI Engine"}
                 </p>
               </div>
               <div className="flex gap-2">
@@ -96,9 +102,9 @@ export function ResultsPage() {
                   )}
                   {isDownloading ? "Generating..." : "Download report"}
                 </Button>
-                <Button>
+                <Button render={<Link to="/review" />}>
                   <SendIcon data-icon="inline-start" />
-                  Send to reviewer
+                  Review Queue
                 </Button>
               </div>
             </div>

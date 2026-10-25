@@ -1,5 +1,4 @@
-// Domain types mirror docs/DATA_MODEL.md so the UI stays aligned with the
-// backend contract that Phase 2 will implement. Phase 1 renders mock data only.
+// Domain types mirror docs/DATA_MODEL.md and backend schemas for production assessment results.
 
 export type Outcome = "Eligible" | "Needs Review" | "Not Recommended"
 

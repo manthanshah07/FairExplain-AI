@@ -13,6 +13,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { api } from "@/services/api"
 
 const applySchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters").default("Priya Sharma"),
+  email: z.string().email("Invalid email address").default("priya.sharma@example.edu"),
   cgpa: z.coerce.number().min(0).max(10, "CGPA must be between 0 and 10"),
   tenth: z.coerce.number().min(0).max(100, "Percentage must be between 0 and 100"),
   twelfth: z.coerce.number().min(0).max(100, "Percentage must be between 0 and 100"),
@@ -87,6 +89,16 @@ export function ApplyPage() {
             
             <TabsContent value="academic" className="mt-6 rounded-xl border bg-card/40 p-6 shadow-sm">
               <div className="grid gap-6 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Full Name</Label>
+                  <Input id="name" placeholder="e.g. Priya Sharma" {...register("name")} defaultValue="Priya Sharma" />
+                  {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email Address</Label>
+                  <Input id="email" type="email" placeholder="e.g. priya.sharma@example.edu" {...register("email")} defaultValue="priya.sharma@example.edu" />
+                  {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="cgpa">CGPA (0-10)</Label>
                   <Input id="cgpa" type="number" step="0.1" placeholder="e.g. 8.5" {...register("cgpa")} />

@@ -19,14 +19,22 @@ export function CtaSection() {
             loan, plain-language rationale, fairness check, and the human-review
             notice that accompanies every outcome.
           </p>
-          <div className="mt-2">
+          <div className="mt-2 flex flex-wrap gap-3">
             <Button
-              render={<Link to="/results" />}
+              render={<Link to="/application" />}
               size="lg"
               variant="secondary"
             >
-              View the sample result
+              Start an Application
               <ArrowRightIcon data-icon="inline-end" />
+            </Button>
+            <Button
+              render={<Link to="/results" />}
+              size="lg"
+              variant="outline"
+              className="bg-transparent text-primary-foreground border-primary-foreground/30 hover:bg-primary-foreground/10"
+            >
+              Explore Assessment Demo
             </Button>
           </div>
         </div>

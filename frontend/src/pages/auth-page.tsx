@@ -35,7 +35,7 @@ export function AuthPage() {
           <div className="space-y-2 text-center">
             <h1 className="text-2xl font-bold tracking-tight">Create an account</h1>
             <p className="text-sm text-muted-foreground">
-              Enter your details to register for FairExplain MVP.
+              Enter your details to create an account and begin an application.
             </p>
           </div>
           <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>

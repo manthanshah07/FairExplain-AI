@@ -10,7 +10,7 @@ const NAV_LINKS = [
   { label: "Apply", href: "/application" },
   { label: "Review Queue", href: "/review" },
   { label: "Dashboard", href: "/dashboard" },
-  { label: "Sample result", href: "/results" },
+  { label: "Sample Result", href: "/results" },
 ]
 
 export function SiteHeader() {
@@ -46,8 +46,8 @@ export function SiteHeader() {
 
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <Button render={<Link to="/results" />} size="sm" className="hidden sm:inline-flex">
-            View sample result
+          <Button render={<Link to="/application" />} size="sm" className="hidden sm:inline-flex">
+            Apply Now
           </Button>
         </div>
       </div>

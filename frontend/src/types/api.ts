@@ -2,6 +2,8 @@
 // Mirrors the form schemas in the pages layer without coupling services to UI.
 
 export interface ApplicationFormData {
+  name?: string
+  email?: string
   cgpa: number
   tenth: number
   twelfth: number
