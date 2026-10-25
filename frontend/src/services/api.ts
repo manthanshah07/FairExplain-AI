@@ -134,6 +134,31 @@ export const applicationApi = {
                   ? "Needs Review"
                   : "Not Recommended"
 
+              let explanationPayload = mockAssessment.explanation
+              try {
+                const expResp = await fetch(`${API_BASE_URL}/api/v1/explanation/generate`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ application_id: appId }),
+                })
+                if (expResp.ok) {
+                  const expJson = await expResp.json()
+                  const expData = expJson.data?.explanation
+                  if (expData) {
+                    explanationPayload = {
+                      ...mockAssessment.explanation,
+                      recommendationText: expData.summary_headline,
+                      reasons: expData.reasons,
+                      confidenceNote: expData.fairness_attestation,
+                      fairnessNote: expData.human_review_notice,
+                      llmPromptVersion: expJson.data?.prompt_version || "v1.0-phase4",
+                    }
+                  }
+                }
+              } catch {
+                // Explanation fallback
+              }
+
               const customAssessment: AssessmentResult = {
                 ...mockAssessment,
                 applicant: {
@@ -169,6 +194,7 @@ export const applicationApi = {
                   tenureMonths: lData.tenure_months,
                   confidence: 100 - Number(lData.dti_ratio_percent) > 0 ? 100 - Number(lData.dti_ratio_percent) : 50,
                 },
+                explanation: explanationPayload,
               }
 
               evaluatedAssessmentsCache.set(appId, customAssessment)
