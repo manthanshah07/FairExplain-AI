@@ -1,9 +1,11 @@
+import { useState } from "react"
 import { Link, useParams } from "react-router-dom"
 import {
   ArrowLeftIcon,
   DownloadIcon,
   SendIcon,
   GitCommitVerticalIcon,
+  Loader2Icon,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
@@ -17,10 +19,36 @@ import { LoanAffordability } from "@/components/results/loan-affordability"
 import { ExplanationCard } from "@/components/results/explanation-card"
 import { FairnessCard } from "@/components/results/fairness-card"
 import { useAssessment } from "@/hooks/use-application"
+import { api } from "@/services/api"
 
 export function ResultsPage() {
   const { applicationId } = useParams()
   const { data: result, isLoading } = useAssessment(applicationId || "sample-123")
+  const [isDownloading, setIsDownloading] = useState(false)
+
+  const handleDownloadReport = async () => {
+    if (!applicationId) return
+    setIsDownloading(true)
+    try {
+      const blob = await api.downloadReportPdf(applicationId)
+      if (blob) {
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement("a")
+        a.href = url
+        a.download = `assessment-report-${applicationId.slice(0, 8)}.pdf`
+        document.body.appendChild(a)
+        a.click()
+        window.URL.revokeObjectURL(url)
+        document.body.removeChild(a)
+      } else {
+        alert("Report could not be downloaded from the server at this time.")
+      }
+    } catch {
+      alert("Failed to download PDF report.")
+    } finally {
+      setIsDownloading(false)
+    }
+  }
 
   if (isLoading || !result) {
     return (
@@ -60,9 +88,13 @@ export function ResultsPage() {
                 </p>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline">
-                  <DownloadIcon data-icon="inline-start" />
-                  Download report
+                <Button variant="outline" onClick={handleDownloadReport} disabled={isDownloading}>
+                  {isDownloading ? (
+                    <Loader2Icon className="animate-spin" data-icon="inline-start" />
+                  ) : (
+                    <DownloadIcon data-icon="inline-start" />
+                  )}
+                  {isDownloading ? "Generating..." : "Download report"}
                 </Button>
                 <Button>
                   <SendIcon data-icon="inline-start" />

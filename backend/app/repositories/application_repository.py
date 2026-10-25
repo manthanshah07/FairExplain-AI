@@ -33,6 +33,7 @@ class ApplicationRepository(BaseRepository[Application]):
         stmt = (
             select(Application)
             .options(
+                selectinload(Application.user),
                 selectinload(Application.academic_record),
                 selectinload(Application.financial_profile),
                 selectinload(Application.documents),

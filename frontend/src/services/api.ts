@@ -271,5 +271,19 @@ export const applicationApi = {
       // offline fallback
     }
     return { verified: true, discrepancies: [] }
+  },
+
+  downloadReportPdf: async (applicationId: string): Promise<Blob | null> => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/report/${applicationId}/pdf`)
+      if (res.ok) {
+        return await res.blob()
+      }
+    } catch {
+      // offline fallback
+    }
+    return null
   }
 }
+
+export const api = applicationApi
