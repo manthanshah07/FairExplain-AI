@@ -21,7 +21,7 @@ export function CtaSection() {
           </p>
           <div className="mt-2 flex flex-wrap gap-3">
             <Button
-              render={<Link to="/application" />}
+              render={<Link to="/student/apply" />}
               size="lg"
               variant="secondary"
             >
@@ -29,7 +29,7 @@ export function CtaSection() {
               <ArrowRightIcon data-icon="inline-end" />
             </Button>
             <Button
-              render={<Link to="/results" />}
+              render={<Link to="/student/results" />}
               size="lg"
               variant="outline"
               className="bg-transparent text-primary-foreground border-primary-foreground/30 hover:bg-primary-foreground/10"
