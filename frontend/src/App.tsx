@@ -4,14 +4,17 @@ import { ThemeProvider } from "@/lib/theme"
 import { AuthProvider } from "@/lib/auth"
 import { RoleGuard } from "@/components/layout/role-guard"
 import { StudentShell } from "@/components/layout/student-shell"
+import { ReviewerShell } from "@/components/layout/reviewer-shell"
 import { LandingPage } from "@/pages/landing-page"
 import { ResultsPage } from "@/pages/results-page"
 import { AuthPage } from "@/pages/auth-page"
-import { ReviewPage } from "@/pages/review-page"
 import { NotFoundPage } from "@/pages/not-found-page"
 import { StudentDashboard } from "@/pages/student/student-dashboard"
 import { ApplyWizard } from "@/pages/student/apply-wizard"
 import { DocumentsPage } from "@/pages/student/documents-page"
+import { ReviewQueuePage } from "@/pages/reviewer/review-queue-page"
+import { CaseDetailPage } from "@/pages/reviewer/case-detail-page"
+import { ReviewHistoryPage } from "@/pages/reviewer/review-history-page"
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -85,12 +88,44 @@ function App() {
                 }
               />
 
+              {/* Reviewer Portal */}
+              <Route
+                path="/reviewer"
+                element={
+                  <RoleGuard allowedRoles={["reviewer", "admin"]}>
+                    <ReviewerShell>
+                      <ReviewQueuePage />
+                    </ReviewerShell>
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="/reviewer/case/:id"
+                element={
+                  <RoleGuard allowedRoles={["reviewer", "admin"]}>
+                    <ReviewerShell>
+                      <CaseDetailPage />
+                    </ReviewerShell>
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="/reviewer/history"
+                element={
+                  <RoleGuard allowedRoles={["reviewer", "admin"]}>
+                    <ReviewerShell>
+                      <ReviewHistoryPage />
+                    </ReviewerShell>
+                  </RoleGuard>
+                }
+              />
+
               {/* Backwards-compatibility aliases */}
               <Route path="/dashboard" element={<Navigate to="/student" replace />} />
               <Route path="/application" element={<Navigate to="/student/apply" replace />} />
               <Route path="/results" element={<Navigate to="/student/results" replace />} />
               <Route path="/results/:applicationId" element={<ResultsPage />} />
-              <Route path="/review" element={<ReviewPage />} />
+              <Route path="/review" element={<Navigate to="/reviewer" replace />} />
 
               {/* 404 */}
               <Route path="*" element={<NotFoundPage />} />
