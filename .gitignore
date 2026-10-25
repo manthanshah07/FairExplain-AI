@@ -4,3 +4,5 @@
 
 # Ignore backend env file too
 backend/.env
+backend/uploads/
+uploads/
