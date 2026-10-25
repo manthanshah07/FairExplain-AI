@@ -14,6 +14,7 @@ from app.routers.loan import router as loan_router
 from app.routers.documents import router as documents_router
 from app.routers.explanation import router as explanation_router
 from app.routers.fairness import router as fairness_router
+from app.routers.admin import router as admin_router
 from app.routers.report import router as report_router
 
 api_router = APIRouter(prefix="/api/v1")
@@ -25,4 +26,5 @@ api_router.include_router(loan_router, prefix="/loan")
 api_router.include_router(documents_router, prefix="/documents")
 api_router.include_router(explanation_router, prefix="/explanation")
 api_router.include_router(fairness_router, prefix="/admin/fairness")
+api_router.include_router(admin_router, prefix="/admin")
 api_router.include_router(report_router, prefix="/report")
