@@ -17,6 +17,14 @@ from app.models.scholarship_assessment import ScholarshipAssessment, AssessmentO
 from app.models.loan_assessment import LoanAssessment  # noqa: F401
 from app.models.explanation_report import ExplanationReport, AssessmentType  # noqa: F401
 from app.models.audit_log import AuditLogEntry, AuditEventType  # noqa: F401
+from app.models.policy import ScholarshipPolicyModel, EligibilityCriterionModel  # noqa: F401
+from app.models.award import AwardSpecificationModel, InstitutionalCapModel  # noqa: F401
+from app.models.evaluation import (  # noqa: F401
+    ScholarshipEvaluationModel,
+    CriterionEvaluationSnapshotModel,
+    TuitionAccountSummaryModel,
+    AwardAllocationModel,
+)
 
 __all__ = [
     "User",
@@ -34,4 +42,12 @@ __all__ = [
     "AssessmentType",
     "AuditLogEntry",
     "AuditEventType",
+    "ScholarshipPolicyModel",
+    "EligibilityCriterionModel",
+    "AwardSpecificationModel",
+    "InstitutionalCapModel",
+    "ScholarshipEvaluationModel",
+    "CriterionEvaluationSnapshotModel",
+    "TuitionAccountSummaryModel",
+    "AwardAllocationModel",
 ]

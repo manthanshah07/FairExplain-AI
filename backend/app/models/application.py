@@ -84,6 +84,22 @@ class Application(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         back_populates="application",
         cascade="all, delete-orphan",
     )
+    evaluations: Mapped[list["ScholarshipEvaluationModel"]] = relationship(
+        "ScholarshipEvaluationModel",
+        back_populates="application",
+        cascade="all, delete-orphan",
+    )
+    tuition_account_summary: Mapped["TuitionAccountSummaryModel | None"] = relationship(
+        "TuitionAccountSummaryModel",
+        back_populates="application",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
+    awards: Mapped[list["AwardSpecificationModel"]] = relationship(
+        "AwardSpecificationModel",
+        back_populates="application",
+        cascade="all, delete-orphan",
+    )
 
     def __repr__(self) -> str:
         return f"<Application id={self.id} user_id={self.user_id} status={self.status}>"
